@@ -41,7 +41,7 @@ public final class Helper {
         exemptHiddenApis();   // so the reflective calls to Android's internal services work here
         Looper.prepareMainLooper();
         Actions.init(userId(), authority.substring(0, authority.length() - HelperProtocol.AUTHORITY_SUFFIX.length()));
-        if (!handOver(5)) { System.err.println("hush_helper: Hush did not take the binder"); System.exit(1); }
+        if (!handOver(5)) { System.err.println("hush_helper: RitxxShh did not take the binder"); System.exit(1); }
         watchApk();
         Looper.loop();
     }

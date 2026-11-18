@@ -1,240 +1,1 @@
-package io.coldmew.hush;
-
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.RemoteInput;
-import android.app.Service;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.ServiceInfo;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.IBinder;
-import android.util.Log;
-import io.coldmew.hush.adb.AdbKey;
-import io.coldmew.hush.adb.AdbMdns;
-import io.coldmew.hush.adb.AdbPairing;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-// Pairs Hush with Wireless debugging while the user is in Settings. It watches for the pairing
-// port (announced only while "Pair device with pairing code" is open) and then offers a reply field
-// in a notification, so the six-digit code can be typed without leaving Settings. After pairing it
-// starts Hush's helper. Runs as a short foreground service (at most a few minutes).
-public class PairingService extends Service {
-    static final String ACTION_START = "io.coldmew.hush.PAIR_START", ACTION_REPLY = "io.coldmew.hush.PAIR_REPLY",
-            ACTION_CANCEL = "io.coldmew.hush.PAIR_CANCEL";
-    static final String EXTRA_CODE = "code";
-    private static final String KEY_CODE = "code";
-    private static final int NOTIF = 5;
-
-    enum State { IDLE, SEARCHING, FOUND, PAIRING, WRONG_CODE, STARTING, DONE, FAILED }
-
-    private static volatile State state = State.IDLE;
-    private static volatile int port = -1;
-    // The pairing popup was open and then closed (e.g. the user switched back to Hush to type the
-    // code): its code is no longer valid, and the setup screen explains how to try again.
-    private static volatile boolean popupClosed;
-    private static final CopyOnWriteArrayList<Runnable> listeners = new CopyOnWriteArrayList<>();
-
-    private AdbMdns mdns;
-    private volatile boolean busy;
-    // Android's service discovery can miss the pairing dialog now and then: while nothing is found,
-    // the search starts afresh every 20 s, and it ends after 3 minutes (on every Android version).
-    private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private final Runnable rediscover = () -> { if (state == State.SEARCHING && !busy) restartDiscovery(); };
-    private final Runnable giveUp = () -> {
-        if (!busy && (state == State.SEARCHING || state == State.FOUND || state == State.WRONG_CODE)) finish(State.IDLE);
-    };
-
-    static State state() { return state; }
-    static boolean portFound() { return port > 0; }
-    static boolean popupClosed() { return popupClosed; }
-    static void listen(Runnable r) { listeners.addIfAbsent(r); }
-    static void unlisten(Runnable r) { listeners.remove(r); }
-
-    static void start(Context c) {
-        c.startForegroundService(new Intent(c, PairingService.class).setAction(ACTION_START));
-    }
-
-    // A code typed in Hush itself (split screen) instead of the notification.
-    static void submit(Context c, String code) {
-        c.startService(new Intent(c, PairingService.class).setAction(ACTION_REPLY).putExtra(EXTRA_CODE, code));
-    }
-
-    private void set(State s) {
-        state = s;
-        for (Runnable r : listeners) r.run();
-    }
-
-    @Override public IBinder onBind(Intent i) { return null; }
-
-    @Override public int onStartCommand(Intent i, int flags, int id) {
-        String a = i == null ? ACTION_START : i.getAction();
-        if (ACTION_CANCEL.equals(a)) { finish(State.IDLE); return START_NOT_STICKY; }
-        if (ACTION_REPLY.equals(a)) {
-            String code = i.getStringExtra(EXTRA_CODE);
-            Bundle r = RemoteInput.getResultsFromIntent(i);
-            if (code == null && r != null && r.getCharSequence(KEY_CODE) != null) code = r.getCharSequence(KEY_CODE).toString();
-            if (code != null) pair(code.replaceAll("\\D", ""));
-            return START_NOT_STICKY;
-        }
-        // Start (also again, when the user taps Pair once more): foreground at once, then a fresh
-        // search for the pairing port.
-        foreground(note(getString(R.string.pair_searching_title), getString(R.string.pair_searching_text), false));
-        if (busy) return START_NOT_STICKY;   // a pairing is already running
-        popupClosed = false;
-        set(State.SEARCHING);
-        restartDiscovery();
-        handler.removeCallbacks(giveUp);
-        handler.postDelayed(giveUp, 180_000);
-        return START_NOT_STICKY;
-    }
-
-    private void restartDiscovery() {
-        if (mdns != null) mdns.stop();
-        mdns = new AdbMdns(this, AdbMdns.TLS_PAIRING, p -> {
-            port = p;
-            if (busy) return;
-            if (p > 0) {
-                popupClosed = false;
-                set(State.FOUND);
-                show(note(getString(R.string.pair_found_title), getString(R.string.pair_found_text), true));
-            } else if (state == State.FOUND || state == State.WRONG_CODE) {
-                popupClosed = true;
-                set(State.SEARCHING);
-                show(note(getString(R.string.pair_searching_title), getString(R.string.pair_closed_text), false));
-            }
-        });
-        mdns.start();
-        handler.removeCallbacks(rediscover);
-        handler.postDelayed(rediscover, 20_000);
-    }
-
-    private void pair(String code) {
-        if (busy) return;
-        if (code.length() != 6) {
-            set(State.WRONG_CODE);
-            show(note(getString(R.string.pair_wrong_title), getString(R.string.pair_code_length), true));
-            return;
-        }
-        int p = port;
-        if (p <= 0 && state == State.IDLE) {
-            // Pairing already ended (Android stops it after about 3 minutes): the code arrived late
-            // and would be ignored without a word. Say so; the tap opens the setup screen.
-            getSystemService(NotificationManager.class).notify(NOTIF, new Notification.Builder(this, Hush.CH_ALERT)
-                    .setSmallIcon(R.drawable.ic_stat_hush).setColor(getColor(R.color.accent))
-                    .setContentTitle(getString(R.string.pair_expired_title))
-                    .setContentText(getString(R.string.pair_expired_text))
-                    .setStyle(new Notification.BigTextStyle().bigText(getString(R.string.pair_expired_text)))
-                    .setContentIntent(PendingIntent.getActivity(this, 9, new Intent(this, HelperSetupActivity.class), PendingIntent.FLAG_IMMUTABLE))
-                    .setAutoCancel(true).build());
-            stopSelf();
-            return;
-        }
-        if (p <= 0) {
-            show(note(getString(R.string.pair_searching_title), getString(R.string.pair_searching_text), false));
-            return;
-        }
-        busy = true;
-        set(State.PAIRING);
-        show(note(getString(R.string.pair_working_title), getString(R.string.pair_working_text), false));
-        new Thread(() -> {
-            try {
-                AdbPairing.pair(AdbKey.get(this), "127.0.0.1", p, code, HelperControl.PAIR_NAME);
-                new Prefs(this).paired(true);
-                new Prefs(this).root(false);   // the user chose Wireless debugging over root
-                Events.add(this, Events.INFO, "Paired with Wireless debugging");
-                set(State.STARTING);
-                show(note(getString(R.string.pair_starting_title), getString(R.string.pair_starting_text), false));
-                if (mdns != null) mdns.stop();
-                HelperControl.Result r = HelperControl.start(this, false);
-                if (r == HelperControl.Result.READY) {
-                    Events.add(this, Events.INFO, "Skipping ready (Hush helper)");
-                    done(true);
-                } else {
-                    Events.add(this, Events.FAIL, "Paired, but the helper did not start: " + r);
-                    done(false);
-                }
-            } catch (AdbPairing.WrongCodeException e) {
-                busy = false;
-                set(State.WRONG_CODE);
-                show(note(getString(R.string.pair_wrong_title), getString(R.string.pair_wrong_text), true));
-            } catch (Exception e) {
-                Log.w(Hush.TAG, "pairing failed", e);
-                busy = false;
-                Events.add(this, Events.FAIL, "Pairing failed: " + e.getClass().getSimpleName());
-                set(State.FAILED);
-                show(note(getString(R.string.pair_failed_title), getString(R.string.pair_failed_text), true));
-            }
-        }, "hush-pair").start();
-    }
-
-    // Ends pairing: a short "ready" notice (or the failure notice) replaces the ongoing one.
-    private void done(boolean ok) {
-        stopForeground(STOP_FOREGROUND_REMOVE);
-        NotificationManager nm = getSystemService(NotificationManager.class);
-        Intent open = new Intent(this, ok ? MainActivity.class : HelperSetupActivity.class);
-        nm.notify(NOTIF, new Notification.Builder(this, Hush.CH_ALERT)
-                .setSmallIcon(R.drawable.ic_stat_hush).setColor(getColor(R.color.accent))
-                .setContentTitle(getString(ok ? R.string.pair_done_title : R.string.pair_failed_title))
-                .setContentText(getString(ok ? R.string.pair_done_text : R.string.helper_notice_fix))
-                .setContentIntent(PendingIntent.getActivity(this, 7, open, PendingIntent.FLAG_IMMUTABLE))
-                .setAutoCancel(true)
-                .setTimeoutAfter(ok ? 8000 : 0)
-                .build());
-        finish(ok ? State.DONE : State.FAILED);
-    }
-
-    private void finish(State end) {
-        handler.removeCallbacksAndMessages(null);
-        if (mdns != null) { mdns.stop(); mdns = null; }
-        port = -1;
-        busy = false;
-        set(end);
-        if (end == State.IDLE) getSystemService(NotificationManager.class).cancel(NOTIF);
-        stopForeground(STOP_FOREGROUND_REMOVE);
-        stopSelf();
-    }
-
-    // shortService (Android 14+) ends after about 3 minutes.
-    @Override public void onTimeout(int startId) { finish(State.IDLE); }
-
-    @Override public void onDestroy() {
-        handler.removeCallbacksAndMessages(null);
-        if (mdns != null) { mdns.stop(); mdns = null; }
-        if (state == State.SEARCHING || state == State.FOUND || state == State.WRONG_CODE) set(State.IDLE);
-        super.onDestroy();
-    }
-
-    private void foreground(Notification n) {
-        if (Build.VERSION.SDK_INT >= 34) startForeground(NOTIF, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE);
-        else startForeground(NOTIF, n);
-    }
-
-    private void show(Notification n) {
-        getSystemService(NotificationManager.class).notify(NOTIF, n);
-    }
-
-    private Notification note(String title, String text, boolean askCode) {
-        PendingIntent cancel = PendingIntent.getService(this, 8, new Intent(this, PairingService.class).setAction(ACTION_CANCEL),
-                PendingIntent.FLAG_IMMUTABLE);
-        Notification.Builder b = new Notification.Builder(this, askCode ? Hush.CH_PAIR : Hush.CH_ALERT)
-                .setSmallIcon(R.drawable.ic_stat_hush).setColor(getColor(R.color.accent))
-                .setContentTitle(title).setContentText(text)
-                .setStyle(new Notification.BigTextStyle().bigText(text))
-                .setOngoing(true).setOnlyAlertOnce(!askCode)
-                .addAction(new Notification.Action.Builder(null, getString(android.R.string.cancel), cancel).build());
-        // Opening Hush would close the pairing popup in Settings and make its code useless, so the
-        // code notification opens nothing: its Enter code button takes the code in place.
-        if (!askCode) b.setContentIntent(PendingIntent.getActivity(this, 9, new Intent(this, HelperSetupActivity.class), PendingIntent.FLAG_IMMUTABLE));
-        if (askCode) {
-            // The reply field needs a mutable PendingIntent: Android fills in the typed text.
-            PendingIntent reply = PendingIntent.getService(this, 10, new Intent(this, PairingService.class).setAction(ACTION_REPLY),
-                    PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-            RemoteInput input = new RemoteInput.Builder(KEY_CODE).setLabel(getString(R.string.pair_code_hint)).build();
-            b.addAction(new Notification.Action.Builder(null, getString(R.string.pair_enter_code), reply).addRemoteInput(input).build());
-        }
-        return b.build();
-    }
-}
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éíã]wN‹Z–‹­¦ëeŠw¬ÕÁ…­…”¥¼¹½±‘µ•Ü¹¡ÕÍ ì()¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹9½Ñ¥™¥…Ñ¥½¸ì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹9½Ñ¥™¥…Ñ¥½¹5…¹…•Èì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹A•¹‘¥¹%¹Ñ•¹Ðì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹I•µ½Ñ•%¹ÁÕÐì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹M•ÉÙ¥”ì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹½¹Ñ•áÐì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹%¹Ñ•¹Ðì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹Á´¹M•ÉÙ¥•%¹™¼ì)¥µÁ½ÉÐ…¹‘É½¥¹½Ì¹	Õ¥±ì)¥µÁ½ÉÐ…¹‘É½¥¹½Ì¹	Õ¹‘±”ì)¥µÁ½ÉÐ…¹‘É½¥¹½Ì¹%	¥¹‘•Èì)¥µÁ½ÉÐ…¹‘É½¥¹ÕÑ¥°¹1½œì)¥µÁ½ÉÐ¥¼¹½±‘µ•Ü¹¡ÕÍ ¹…‘ˆ¹‘‰-•äì)¥µÁ½ÉÐ¥¼¹½±‘µ•Ü¹¡ÕÍ ¹…‘ˆ¹‘‰5‘¹Ìì)¥µÁ½ÉÐ¥¼¹½±‘µ•Ü¹¡ÕÍ ¹…‘ˆ¹‘‰A…¥É¥¹œì)¥µÁ½ÉÐ©…Ù„¹ÕÑ¥°¹½¹ÕÉÉ•¹Ð¹½Áå=¹]É¥Ñ•ÉÉ…å1¥ÍÐì((¼¼A…¥ÉÌ!ÕÍ Ý¥Ñ ]¥É•±•ÍÌ‘•‰Õ¥¹œÝ¡¥±”Ñ¡”ÕÍ•È¥Ì¥¸M•ÑÑ¥¹Ì¸%ÐÝ…Ñ¡•Ì™½ÈÑ¡”Á…¥É¥¹œ(¼¼Á½ÉÐ€¡…¹¹½Õ¹•½¹±äÝ¡¥±”€‰A…¥È‘•Ù¥”Ý¥Ñ Á…¥É¥¹œ½‘”ˆ¥Ì½Á•¸¤…¹Ñ¡•¸½™™•ÉÌ„É•Á±ä™¥•±(¼¼¥¸„¹½Ñ¥™¥…Ñ¥½¸°Í¼Ñ¡”Í¥àµ‘¥¥Ð½‘”…¸‰”ÑåÁ•Ý¥Ñ¡½ÕÐ±•…Ù¥¹œM•ÑÑ¥¹Ì¸™Ñ•ÈÁ…¥É¥¹œ¥Ð(¼¼ÍÑ…ÉÑÌ!ÕÍ Ì¡•±Á•È¸IÕ¹Ì…Ì„Í¡½ÉÐ™½É•É½Õ¹Í•ÉÙ¥”€¡…Ðµ½ÍÐ„™•Üµ¥¹ÕÑ•Ì¤¸)ÁÕ‰±¥Œ±…ÍÌA…¥É¥¹M•ÉÙ¥”•áÑ•¹‘ÌM•ÉÙ¥”ì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œQ%=9}MQIP€ô€‰¥¼¹½±‘µ•Ü¹¡ÕÍ ¹A%I}MQIPˆ°Q%=9}IA1d€ô€‰¥¼¹½±‘µ•Ü¹¡ÕÍ ¹A%I}IA1dˆ°(€€€€€€€€€€€Q%=9}90€ô€‰¥¼¹½±‘µ•Ü¹¡ÕÍ ¹A%I}90ˆì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œaQI}=€ô€‰½‘”ˆì(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œ-e}=€ô€‰½‘”ˆì(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°¥¹Ð9=Q%€ô€Ôì((€€€•¹Õ´MÑ…Ñ”ì%1°MI!%9°=U9°A%I%9°]I=9}=°MQIQ%9°=9°%1ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½±…Ñ¥±”MÑ…Ñ”ÍÑ…Ñ”€ôMÑ…Ñ”¹%1ì(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½±…Ñ¥±”¥¹ÐÁ½ÉÐ€ô€´Äì(€€€€¼¼Q¡”Á…¥É¥¹œÁ½ÁÕÀÝ…Ì½Á•¸…¹Ñ¡•¸±½Í•€¡”¹œ¸Ñ¡”ÕÍ•ÈÍÝ¥Ñ¡•‰…¬Ñ¼!ÕÍ Ñ¼ÑåÁ”Ñ¡”(€€€€¼¼½‘”¤è¥ÑÌ½‘”¥Ì¹¼±½¹•ÈÙ…±¥°…¹Ñ¡”Í•ÑÕÀÍÉ••¸•áÁ±…¥¹Ì¡½ÜÑ¼ÑÉä……¥¸¸(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½±…Ñ¥±”‰½½±•…¸Á½ÁÕÁ±½Í•ì(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°½Áå=¹]É¥Ñ•ÉÉ…å1¥ÍÐñIÕ¹¹…‰±”ø±¥ÍÑ•¹•ÉÌ€ô¹•Ü½Áå=¹]É¥Ñ•ÉÉ…å1¥ÍÐðø ¤ì((€€€ÁÉ¥Ù…Ñ”‘‰5‘¹Ìµ‘¹Ìì(€€€ÁÉ¥Ù…Ñ”Ù½±…Ñ¥±”‰½½±•…¸‰ÕÍäì(€€€€¼¼¹‘É½¥ÌÍ•ÉÙ¥”‘¥Í½Ù•Éä…¸µ¥ÍÌÑ¡”Á…¥É¥¹œ‘¥…±½œ¹½Ü…¹Ñ¡•¸èÝ¡¥±”¹½Ñ¡¥¹œ¥Ì™½Õ¹°(€€€€¼¼Ñ¡”Í•…É ÍÑ…ÉÑÌ…™É•Í •Ù•Éä€ÈÀÌ°…¹¥Ð•¹‘Ì…™Ñ•È€Ìµ¥¹ÕÑ•Ì€¡½¸•Ù•Éä¹‘É½¥Ù•ÉÍ¥½¸¤¸(€€€ÁÉ¥Ù…Ñ”™¥¹…°…¹‘É½¥¹½Ì¹!…¹‘±•È¡…¹‘±•È€ô¹•Ü…¹‘É½¥¹½Ì¹!…¹‘±•È¡…¹‘É½¥¹½Ì¹1½½Á•È¹•Ñ5…¥¹1½½Á•È ¤¤ì(€€€ÁÉ¥Ù…Ñ”™¥¹…°IÕ¹¹…‰±”É•‘¥Í½Ù•È€ô€ ¤€´øì¥˜€¡ÍÑ…Ñ”€ôôMÑ…Ñ”¹MI!%9€˜˜€…‰ÕÍä¤É•ÍÑ…ÉÑ¥Í½Ù•Éä ¤ìôì(€€€ÁÉ¥Ù…Ñ”™¥¹…°IÕ¹¹…‰±”¥Ù•UÀ€ô€ ¤€´øì(€€€€€€€¥˜€ …‰ÕÍä€˜˜€¡ÍÑ…Ñ”€ôôMÑ…Ñ”¹MI!%9ñðÍÑ…Ñ”€ôôMÑ…Ñ”¹=U9ñðÍÑ…Ñ”€ôôMÑ…Ñ”¹]I=9}=¤¤™¥¹¥Í ¡MÑ…Ñ”¹%1¤ì(€€€ôì((€€€ÍÑ…Ñ¥ŒMÑ…Ñ”ÍÑ…Ñ” ¤ìÉ•ÑÕÉ¸ÍÑ…Ñ”ìô(€€€ÍÑ…Ñ¥Œ‰½½±•…¸Á½ÉÑ½Õ¹ ¤ìÉ•ÑÕÉ¸Á½ÉÐ€ø€Àìô(€€€ÍÑ…Ñ¥Œ‰½½±•…¸Á½ÁÕÁ±½Í• ¤ìÉ•ÑÕÉ¸Á½ÁÕÁ±½Í•ìô(€€€ÍÑ…Ñ¥ŒÙ½¥±¥ÍÑ•¸¡IÕ¹¹…‰±”È¤ì±¥ÍÑ•¹•ÉÌ¹…‘‘%™‰Í•¹Ð¡È¤ìô(€€€ÍÑ…Ñ¥ŒÙ½¥Õ¹±¥ÍÑ•¸¡IÕ¹¹…‰±”È¤ì±¥ÍÑ•¹•ÉÌ¹É•µ½Ù”¡È¤ìô((€€€ÍÑ…Ñ¥ŒÙ½¥ÍÑ…ÉÐ¡½¹Ñ•áÐŒ¤ì(€€€€€€€Œ¹ÍÑ…ÉÑ½É•É½Õ¹‘M•ÉÙ¥”¡¹•Ü%¹Ñ•¹Ð¡Œ°A…¥É¥¹M•ÉÙ¥”¹±…ÍÌ¤¹Í•ÑÑ¥½¸¡Q%=9}MQIP¤¤ì(€€€ô((€€€€¼¼½‘”ÑåÁ•¥¸!ÕÍ ¥ÑÍ•±˜€¡ÍÁ±¥ÐÍÉ••¸¤¥¹ÍÑ•…½˜Ñ¡”¹½Ñ¥™¥…Ñ¥½¸¸(€€€ÍÑ…Ñ¥ŒÙ½¥ÍÕ‰µ¥Ð¡½¹Ñ•áÐŒ°MÑÉ¥¹œ½‘”¤ì(€€€€€€€Œ¹ÍÑ…ÉÑM•ÉÙ¥”¡¹•Ü%¹Ñ•¹Ð¡Œ°A…¥É¥¹M•ÉÙ¥”¹±…ÍÌ¤¹Í•ÑÑ¥½¸¡Q%=9}IA1d¤¹ÁÕÑáÑÉ„¡aQI}=°½‘”¤¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥Í•Ð¡MÑ…Ñ”Ì¤ì(€€€€€€€ÍÑ…Ñ”€ôÌì(€€€€€€€™½È€¡IÕ¹¹…‰±”È€è±¥ÍÑ•¹•ÉÌ¤È¹ÉÕ¸ ¤ì(€€€ô((€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥Œ%	¥¹‘•È½¹	¥¹¡%¹Ñ•¹Ð¤¤ìÉ•ÑÕÉ¸¹Õ±°ìô((€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥Œ¥¹Ð½¹MÑ…ÉÑ½µµ…¹¡%¹Ñ•¹Ð¤°¥¹Ð™±…Ì°¥¹Ð¥¤ì(€€€€€€€MÑÉ¥¹œ„€ô¤€ôô¹Õ±°€üQ%=9}MQIP€è¤¹•ÑÑ¥½¸ ¤ì(€€€€€€€¥˜€¡Q%=9}90¹•ÅÕ…±Ì¡„¤¤ì™¥¹¥Í ¡MÑ…Ñ”¹%1¤ìÉ•ÑÕÉ¸MQIQ}9=Q}MQ%-dìô(€€€€€€€¥˜€¡Q%=9}IA1d¹•ÅÕ…±Ì¡„¤¤ì(€€€€€€€€€€€MÑÉ¥¹œ½‘”€ô¤¹•ÑMÑÉ¥¹áÑÉ„¡aQI}=¤ì(€€€€€€€€€€€	Õ¹‘±”È€ôI•µ½Ñ•%¹ÁÕÐ¹•ÑI•ÍÕ±ÑÍÉ½µ%¹Ñ•¹Ð¡¤¤ì(€€€€€€€€€€€¥˜€¡½‘”€ôô¹Õ±°€˜˜È€„ô¹Õ±°€˜˜È¹•Ñ¡…ÉM•ÅÕ•¹”¡-e}=¤€„ô¹Õ±°¤½‘”€ôÈ¹•Ñ¡…ÉM•ÅÕ•¹”¡-e}=¤¹Ñ½MÑÉ¥¹œ ¤ì(€€€€€€€€€€€¥˜€¡½‘”€„ô¹Õ±°¤Á…¥È¡½‘”¹É•Á±…•±° ‰qqˆ°€ˆˆ¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸MQIQ}9=Q}MQ%-dì(€€€€€€€ô(€€€€€€€€¼¼MÑ…ÉÐ€¡…±Í¼……¥¸°Ý¡•¸Ñ¡”ÕÍ•ÈÑ…ÁÌA…¥È½¹”µ½É”¤è™½É•É½Õ¹…Ð½¹”°Ñ¡•¸„™É•Í (€€€€€€€€¼¼Í•…É ™½ÈÑ¡”Á…¥É¥¹œÁ½ÉÐ¸(€€€€€€€™½É•É½Õ¹¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}Í•…É¡¥¹}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}Í•…É¡¥¹}Ñ•áÐ¤°™…±Í”¤¤ì(€€€€€€€¥˜€¡‰ÕÍä¤É•ÑÕÉ¸MQIQ}9=Q}MQ%-dì€€€¼¼„Á…¥É¥¹œ¥Ì…±É•…‘äÉÕ¹¹¥¹œ(€€€€€€€Á½ÁÕÁ±½Í•€ô™…±Í”ì(€€€€€€€Í•Ð¡MÑ…Ñ”¹MI!%9¤ì(€€€€€€€É•ÍÑ…ÉÑ¥Í½Ù•Éä ¤ì(€€€€€€€¡…¹‘±•È¹É•µ½Ù•…±±‰…­Ì¡¥Ù•UÀ¤ì(€€€€€€€¡…¹‘±•È¹Á½ÍÑ•±…å•¡¥Ù•UÀ°€ÄàÁ|ÀÀÀ¤ì(€€€€€€€É•ÑÕÉ¸MQIQ}9=Q}MQ%-dì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥É•ÍÑ…ÉÑ¥Í½Ù•Éä ¤ì(€€€€€€€¥˜€¡µ‘¹Ì€„ô¹Õ±°¤µ‘¹Ì¹ÍÑ½À ¤ì(€€€€€€€µ‘¹Ì€ô¹•Ü‘‰5‘¹Ì¡Ñ¡¥Ì°‘‰5‘¹Ì¹Q1M}A%I%9°À€´øì(€€€€€€€€€€€Á½ÉÐ€ôÀì(€€€€€€€€€€€¥˜€¡‰ÕÍä¤É•ÑÕÉ¸ì(€€€€€€€€€€€¥˜€¡À€ø€À¤ì(€€€€€€€€€€€€€€€Á½ÁÕÁ±½Í•€ô™…±Í”ì(€€€€€€€€€€€€€€€Í•Ð¡MÑ…Ñ”¹=U9¤ì(€€€€€€€€€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}™½Õ¹‘}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}™½Õ¹‘}Ñ•áÐ¤°ÑÉÕ”¤¤ì(€€€€€€€€€€€ô•±Í”¥˜€¡ÍÑ…Ñ”€ôôMÑ…Ñ”¹=U9ñðÍÑ…Ñ”€ôôMÑ…Ñ”¹]I=9}=¤ì(€€€€€€€€€€€€€€€Á½ÁÕÁ±½Í•€ôÑÉÕ”ì(€€€€€€€€€€€€€€€Í•Ð¡MÑ…Ñ”¹MI!%9¤ì(€€€€€€€€€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}Í•…É¡¥¹}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}±½Í•‘}Ñ•áÐ¤°™…±Í”¤¤ì(€€€€€€€€€€€ô(€€€€€€€ô¤ì(€€€€€€€µ‘¹Ì¹ÍÑ…ÉÐ ¤ì(€€€€€€€¡…¹‘±•È¹É•µ½Ù•…±±‰…­Ì¡É•‘¥Í½Ù•È¤ì(€€€€€€€¡…¹‘±•È¹Á½ÍÑ•±…å•¡É•‘¥Í½Ù•È°€ÈÁ|ÀÀÀ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥Á…¥È¡MÑÉ¥¹œ½‘”¤ì(€€€€€€€¥˜€¡‰ÕÍä¤É•ÑÕÉ¸ì(€€€€€€€¥˜€¡½‘”¹±•¹Ñ  ¤€„ô€Ø¤ì(€€€€€€€€€€€Í•Ð¡MÑ…Ñ”¹]I=9}=¤ì(€€€€€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}ÝÉ½¹}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}½‘•}±•¹Ñ ¤°ÑÉÕ”¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€¥¹ÐÀ€ôÁ½ÉÐì(€€€€€€€¥˜€¡À€ðô€À€˜˜ÍÑ…Ñ”€ôôMÑ…Ñ”¹%1¤ì(€€€€€€€€€€€€¼¼A…¥É¥¹œ…±É•…‘ä•¹‘•€¡¹‘É½¥ÍÑ½ÁÌ¥Ð…™Ñ•È…‰½ÕÐ€Ìµ¥¹ÕÑ•Ì¤èÑ¡”½‘”…ÉÉ¥Ù•±…Ñ”(€€€€€€€€€€€€¼¼…¹Ý½Õ±‰”¥¹½É•Ý¥Ñ¡½ÕÐ„Ý½É¸M…äÍ¼ìÑ¡”Ñ…À½Á•¹ÌÑ¡”Í•ÑÕÀÍÉ••¸¸(€€€€€€€€€€€•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤¹¹½Ñ¥™ä¡9=Q%°¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	Õ¥±‘•È¡Ñ¡¥Ì°!ÕÍ ¹!}1IP¤(€€€€€€€€€€€€€€€€€€€€¹Í•ÑMµ…±±%½¸¡H¹‘É…Ý…‰±”¹¥}ÍÑ…Ñ}¡ÕÍ ¤¹Í•Ñ½±½È¡•Ñ½±½È¡H¹½±½È»]w¶‰žËkºwµçeÌ°€ä°¹•Ü%¹Ñ•¹Ð¡Ñ¡¥Ì°!•±Á•ÉM•ÑÕÁÑ¥Ù¥Ñä¹±…ÍÌ¤°A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1¤¤(€€€€€€€€€€€€€€€€€€€€¹Í•ÑÕÑ½…¹•°¡ÑÉÕ”¤¹‰Õ¥± ¤¤ì(€€€€€€€€€€€ÍÑ½ÁM•±˜ ¤ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€¥˜€¡À€ðô€À¤ì(€€€€€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}Í•…É¡¥¹}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}Í•…É¡¥¹}Ñ•áÐ¤°™…±Í”¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€‰ÕÍä€ôÑÉÕ”ì(€€€€€€€Í•Ð¡MÑ…Ñ”¹A%I%9¤ì(€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}Ý½É­¥¹}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}Ý½É­¥¹}Ñ•áÐ¤°™…±Í”¤¤ì(€€€€€€€¹•ÜQ¡É•…  ¤€´øì(€€€€€€€€€€€ÑÉäì(€€€€€€€€€€€€€€€‘‰A…¥É¥¹œ¹Á…¥È¡‘‰-•ä¹•Ð¡Ñ¡¥Ì¤°€ˆÄÈÜ¸À¸À¸Äˆ°À°½‘”°!•±Á•É½¹ÑÉ½°¹A%I}95¤ì(€€€€€€€€€€€€€€€¹•ÜAÉ•™Ì¡Ñ¡¥Ì¤¹Á…¥É•¡ÑÉÕ”¤ì(€€€€€€€€€€€€€€€¹•ÜAÉ•™Ì¡Ñ¡¥Ì¤¹É½½Ð¡™…±Í”¤ì€€€¼¼Ñ¡”ÕÍ•È¡½Í”]¥É•±•ÍÌ‘•‰Õ¥¹œ½Ù•ÈÉ½½Ð(€€€€€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Ñ¡¥Ì°Ù•¹ÑÌ¹%9<°€‰A…¥É•Ý¥Ñ ]¥É•±•ÍÌ‘•‰Õ¥¹œˆ¤ì(€€€€€€€€€€€€€€€Í•Ð¡MÑ…Ñ”¹MQIQ%9¤ì(€€€€€€€€€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}ÍÑ…ÉÑ¥¹}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}ÍÑ…ÉÑ¥¹}Ñ•áÐ¤°™…±Í”¤¤ì(€€€€€€€€€€€€€€€¥˜€¡µ‘¹Ì€„ô¹Õ±°¤µ‘¹Ì¹ÍÑ½À ¤ì(€€€€€€€€€€€€€€€!•±Á•É½¹ÑÉ½°¹I•ÍÕ±ÐÈ€ô!•±Á•É½¹ÑÉ½°¹ÍÑ…ÉÐ¡Ñ¡¥Ì°™…±Í”¤ì(€€€€€€€€€€€€€€€¥˜€¡È€ôô!•±Á•É½¹ÑÉ½°¹I•ÍÕ±Ð¹Id¤ì(€€€€€€€€€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Ñ¡¥Ì°Ù•¹ÑÌ¹%9<°€‰M­¥ÁÁ¥¹œÉ•…‘ä€¡I¥ÑááM¡ ¡•±Á•È¤ˆ¤ì(€€€€€€€€€€€€€€€€€€€‘½¹”¡ÑÉÕ”¤ì(€€€€€€€€€€€€€€€ô•±Í”ì(€€€€€€€€€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Ñ¡¥Ì°Ù•¹ÑÌ¹%0°€‰A…¥É•°‰ÕÐÑ¡”¡•±Á•È‘¥¹½ÐÍÑ…ÉÐè€ˆ€¬È¤ì(€€€€€€€€€€€€€€€€€€€‘½¹”¡™…±Í”¤ì(€€€€€€€€€€€€€€€ô(€€€€€€€€€€€ô…Ñ €¡‘‰A…¥É¥¹œ¹]É½¹½‘•á•ÁÑ¥½¸”¤ì(€€€€€€€€€€€€€€€‰ÕÍä€ô™…±Í”ì(€€€€€€€€€€€€€€€Í•Ð¡MÑ…Ñ”¹]I=9}=¤ì(€€€€€€€€€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}ÝÉ½¹}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}ÝÉ½¹}Ñ•áÐ¤°ÑÉÕ”¤¤ì(€€€€€€€€€€€ô…Ñ €¡á•ÁÑ¥½¸”¤ì(€€€€€€€€€€€€€€€1½œ¹Ü¡!ÕÍ ¹Q°€‰Á…¥É¥¹œ™…¥±•ˆ°”¤ì(€€€€€€€€€€€€€€€‰ÕÍä€ô™…±Í”ì(€€€€€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Ñ¡¥Ì°Ù•¹ÑÌ¹%0°€‰A…¥É¥¹œ™…¥±•è€ˆ€¬”¹•Ñ±…ÍÌ ¤¹•ÑM¥µÁ±•9…µ” ¤¤ì(€€€€€€€€€€€€€€€Í•Ð¡MÑ…Ñ”¹%1¤ì(€€€€€€€€€€€€€€€Í¡½Ü¡¹½Ñ”¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}™…¥±•‘}Ñ¥Ñ±”¤°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}™…¥±•‘}Ñ•áÐ¤°ÑÉÕ”¤¤ì(€€€€€€€€€€€ô(€€€€€€€ô°€‰¡ÕÍ µÁ…¥Èˆ¤¹ÍÑ…ÉÐ ¤ì(€€€ô((€€€€¼¼¹‘ÌÁ…¥É¥¹œè„Í¡½ÉÐ€‰É•…‘äˆ¹½Ñ¥”€¡½ÈÑ¡”™…¥±ÕÉ”¹½Ñ¥”¤É•Á±…•ÌÑ¡”½¹½¥¹œ½¹”¸(€€€ÁÉ¥Ù…Ñ”Ù½¥‘½¹”¡‰½½±•…¸½¬¤ì(€€€€€€€ÍÑ½Á½É•É½Õ¹¡MQ=A}=II=U9}I5=Y¤ì(€€€€€€€9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹´€ô•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤ì(€€€€€€€%¹Ñ•¹Ð½Á•¸€ô¹•Ü%¹Ñ•¹Ð¡Ñ¡¥Ì°½¬€ü5…¥¹Ñ¥Ù¥Ñä¹±…ÍÌ€è!•±Á•ÉM•ÑÕÁÑ¥Ù¥Ñä¹±…ÍÌ¤ì(€€€€€€€¹´¹¹½Ñ¥™ä¡9=Q%°¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	Õ¥±‘•È¡Ñ¡¥Ì°!ÕÍ ¹!}1IP¤(€€€€€€€€€€€€€€€€¹Í•ÑMµ…±±%½¸¡H¹‘É…Ý…‰±”¹¥}ÍÑ…Ñ}¡ÕÍ ¤¹Í•Ñ½±½È¡•Ñ½±½È¡H¹½±½È¹…•¹Ð¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ¥Ñ±”¡•ÑMÑÉ¥¹œ¡½¬€üH¹ÍÑÉ¥¹œ¹Á…¥É}‘½¹•}Ñ¥Ñ±”€èH¹ÍÑÉ¥¹œ¹Á…¥É}™…¥±•‘}Ñ¥Ñ±”¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ•áÐ¡•ÑMÑÉ¥¹œ¡½¬€üH¹ÍÑÉ¥¹œ¹Á…¥É}‘½¹•}Ñ•áÐ€èH¹ÍÑÉ¥¹œ¹¡•±Á•É}¹½Ñ¥•}™¥à¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹Ñ%¹Ñ•¹Ð¡A•¹‘¥¹%¹Ñ•¹Ð¹•ÑÑ¥Ù¥Ñä¡Ñ¡¥Ì°€Ü°½Á•¸°A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1¤¤(€€€€€€€€€€€€€€€€¹Í•ÑÕÑ½…¹•°¡ÑÉÕ”¤(€€€€€€€€€€€€€€€€¹Í•ÑQ¥µ•½ÕÑ™Ñ•È¡½¬€ü€àÀÀÀ€è€À¤(€€€€€€€€€€€€€€€€¹‰Õ¥± ¤¤ì(€€€€€€€™¥¹¥Í ¡½¬€üMÑ…Ñ”¹=9€èMÑ…Ñ”¹%1¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥™¥¹¥Í ¡MÑ…Ñ”•¹¤ì(€€€€€€€¡…¹‘±•È¹É•µ½Ù•…±±‰…­Í¹‘5•ÍÍ…•Ì¡¹Õ±°¤ì(€€€€€€€¥˜€¡µ‘¹Ì€„ô¹Õ±°¤ìµ‘¹Ì¹ÍÑ½À ¤ìµ‘¹Ì€ô¹Õ±°ìô(€€€€€€€Á½ÉÐ€ô€´Äì(€€€€€€€‰ÕÍä€ô™…±Í”ì(€€€€€€€Í•Ð¡•¹¤ì(€€€€€€€¥˜€¡•¹€ôôMÑ…Ñ”¹%1¤•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤¹…¹•°¡9=Q%¤ì(€€€€€€€ÍÑ½Á½É•É½Õ¹¡MQ=A}=II=U9}I5=Y¤ì(€€€€€€€ÍÑ½ÁM•±˜ ¤ì(€€€ô((€€€€¼¼Í¡½ÉÑM•ÉÙ¥”€¡¹‘É½¥€ÄÐ¬¤•¹‘Ì…™Ñ•È…‰½ÕÐ€Ìµ¥¹ÕÑ•Ì¸(€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥ŒÙ½¥½¹Q¥µ•½ÕÐ¡¥¹ÐÍÑ…ÉÑ%¤ì™¥¹¥Í ¡MÑ…Ñ”¹%1¤ìô((€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥ŒÙ½¥½¹•ÍÑÉ½ä ¤ì(€€€€€€€¡…¹‘±•È¹É•µ½Ù•…±±‰…­Í¹‘5•ÍÍ…•Ì¡¹Õ±°¤ì(€€€€€€€¥˜€¡µ‘¹Ì€„ô¹Õ±°¤ìµ‘¹Ì¹ÍÑ½À ¤ìµ‘¹Ì€ô¹Õ±°ìô(€€€€€€€¥˜€¡ÍÑ…Ñ”€ôôMÑ…Ñ”¹MI!%9ñðÍÑ…Ñ”€ôôMÑ…Ñ”¹=U9ñðÍÑ…Ñ”€ôôMÑ…Ñ”¹]I=9}=¤Í•Ð¡MÑ…Ñ”¹%1¤ì(€€€€€€€ÍÕÁ•È¹½¹•ÍÑÉ½ä ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥™½É•É½Õ¹¡9½Ñ¥™¥…Ñ¥½¸¸¤ì(€€€€€€€¥˜€¡	Õ¥±¹YIM%=8¹M-}%9P€øô€ÌÐ¤ÍÑ…ÉÑ½É•É½Õ¹¡9=Q%°¸°M•ÉÙ¥•%¹™¼¹=II=U9}MIY%}QeA}M!=IQ}MIY%¤ì(€€€€€€€•±Í”ÍÑ…ÉÑ½É•É½Õ¹¡9=Q%°¸¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”Ù½¥Í¡½Ü¡9½Ñ¥™¥…Ñ¥½¸¸¤ì(€€€€€€€•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤¹¹½Ñ¥™ä¡9=Q%°¸¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”9½Ñ¥™¥…Ñ¥½¸¹½Ñ”¡MÑÉ¥¹œÑ¥Ñ±”°MÑÉ¥¹œÑ•áÐ°‰½½±•…¸…Í­½‘”¤ì(€€€€€€€A•¹‘¥¹%¹Ñ•¹Ð…¹•°€ôA•¹‘¥¹%¹Ñ•¹Ð¹•ÑM•ÉÙ¥”¡Ñ¡¥Ì°€à°¹•Ü%¹Ñ•¹Ð¡Ñ¡¥Ì°A…¥É¥¹M•ÉÙ¥”¹±…ÍÌ¤¹Í•ÑÑ¥½¸¡Q%=9}90¤°(€€€€€€€€€€€€€€€A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1¤ì(€€€€€€€9½Ñ¥™¥…Ñ¥½¸¹	Õ¥±‘•Èˆ€ô¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	Õ¥±‘•È¡Ñ¡¥Ì°…Í­½‘”€ü!ÕÍ ¹!}A%H€è!ÕÍ ¹!}1IP¤(€€€€€€€€€€€€€€€€¹Í•ÑMµ…±±%½¸¡H¹‘É…Ý…‰±”¹¥}ÍÑ…Ñ}¡ÕÍ ¤¹Í•Ñ½±½È¡•Ñ½±½È¡H¹½±½È¹…•¹Ð¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ¥Ñ±”¡Ñ¥Ñ±”¤¹Í•Ñ½¹Ñ•¹ÑQ•áÐ¡Ñ•áÐ¤(€€€€€€€€€€€€€€€€¹Í•ÑMÑå±”¡¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	¥Q•áÑMÑå±” ¤¹‰¥Q•áÐ¡Ñ•áÐ¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ=¹½¥¹œ¡ÑÉÕ”¤¹Í•Ñ=¹±å±•ÉÑ=¹” ……Í­½‘”¤(€€€€€€€€€€€€€€€€¹…‘‘Ñ¥½¸¡¹•Ü9½Ñ¥™¥…Ñ¥½¸¹Ñ¥½¸¹	Õ¥±‘•È¡¹Õ±°°•ÑMÑÉ¥¹œ¡…¹‘É½¥¹H¹ÍÑÉ¥¹œ¹…¹•°¤°…¹•°¤¹‰Õ¥± ¤¤ì(€€€€€€€€¼¼=Á•¹¥¹œ!ÕÍ Ý½Õ±±½Í”Ñ¡”Á…¥É¥¹œÁ½ÁÕÀ¥¸M•ÑÑ¥¹Ì…¹µ…­”¥ÑÌ½‘”ÕÍ•±•ÍÌ°Í¼Ñ¡”(€€€€€€€€¼¼½‘”¹½Ñ¥™¥…Ñ¥½¸½Á•¹Ì¹½Ñ¡¥¹œè¥ÑÌ¹Ñ•È½‘”‰ÕÑÑ½¸Ñ…­•ÌÑ¡”½‘”¥¸Á±…”¸(€€€€€€€¥˜€ ……Í­½‘”¤ˆ¹Í•Ñ½¹Ñ•¹Ñ%¹Ñ•¹Ð¡A•¹‘¥¹%¹Ñ•¹Ð¹•ÑÑ¥Ù¥Ñä¡Ñ¡¥Ì°€ä°¹•Ü%¹Ñ•¹Ð¡Ñ¡¥Ì°!•±Á•ÉM•ÑÕÁÑ¥Ù¥Ñä¹±…ÍÌ¤°A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1¤¤ì(€€€€€€€¥˜€¡…Í­½‘”¤ì(€€€€€€€€€€€€¼¼Q¡”É•Á±ä™¥•±¹••‘Ì„µÕÑ…‰±”A•¹‘¥¹%¹Ñ•¹Ðè¹‘É½¥™¥±±Ì¥¸Ñ¡”ÑåÁ•Ñ•áÐ¸(€€€€€€€€€€€A•¹‘¥¹%¹Ñ•¹ÐÉ•Á±ä€ôA•¹‘¥¹%¹Ñ•¹Ð¹•ÑM•ÉÙ¥”¡Ñ¡¥Ì°€ÄÀ°¹•Ü%¹Ñ•¹Ð¡Ñ¡¥Ì°A…¥É¥¹M•ÉÙ¥”¹±…ÍÌ¤¹Í•ÑÑ¥½¸¡Q%=9}IA1d¤°(€€€€€€€€€€€€€€€€€€€A•¹‘¥¹%¹Ñ•¹Ð¹1}5UQ	1ðA•¹‘¥¹%¹Ñ•¹Ð¹1}UAQ}UII9P¤ì(€€€€€€€€€€€I•µ½Ñ•%¹ÁÕÐ¥¹ÁÕÐ€ô¹•ÜI•µ½Ñ•%¹ÁÕÐ¹	Õ¥±‘•È¡-e}=¤¹Í•Ñ1…‰•°¡•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}½‘•}¡¥¹Ð¤¤¹‰Õ¥± ¤ì(€€€€€€€€€€€ˆ¹…‘‘Ñ¥½¸¡¹•Ü9½Ñ¥™¥…Ñ¥½¸¹Ñ¥½¸¹	Õ¥±‘•È¡¹Õ±°°•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹Á…¥É}•¹Ñ•É}½‘”¤°É•Á±ä¤¹…‘‘I•µ½Ñ•%¹ÁÕÐ¡¥¹ÁÕÐ¤¹‰Õ¥± ¤¤ì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸ˆ¹‰Õ¥± ¤ì(€€€ô)ô

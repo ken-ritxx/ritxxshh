@@ -1,722 +1,128 @@
-package io.coldmew.hush;
+Y™Áäx-ÆÈ‹j◊ù¢Îi∫⁄+äßj[hëÈ‹¢ÈÌ◊}ÙÌ:-jZ.∂õ≠ñ)ﬁ≥W6∂vRñÚÊ6ˆ∆F÷WrÊáW6É∞†¶ñ◊˜'BÊG&ˆñB‰÷ÊñfW7C∞¶ñ◊˜'BÊG&ˆñBÊ‰7FófóGì∞¶ñ◊˜'BÊG&ˆñBÊ‰∆W'DFñ∆ˆs∞¶ñ◊˜'BÊG&ˆñBÊ6ˆÁFVÁB‰6ˆ◊ˆÊVÁDÊ÷S∞¶ñ◊˜'BÊG&ˆñBÊ6ˆÁFVÁB‰ñÁFVÁC∞¶ñ◊˜'BÊG&ˆñBÊ6ˆÁFVÁBÁ“Â6∂vT÷ÊvW#∞¶ñ◊˜'BÊG&ˆñBÊ6ˆÁFVÁBÁ&W2‰6ˆ∆˜%7FFT∆ó7C∞¶ñ◊˜'BÊG&ˆñBÊw&Üñ72ÊG&v&∆R‰G&v&∆S∞¶ñ◊˜'BÊG&ˆñBÊÊWBÂW&ì∞¶ñ◊˜'BÊG&ˆñBÊÊWBÂgÂ6W'fñ6S∞¶ñ◊˜'BÊG&ˆñBÊ˜2‰'Vñ∆C∞¶ñ◊˜'BÊG&ˆñBÊ˜2‰'VÊF∆S∞¶ñ◊˜'BÊG&ˆñBÊ˜2‰ÜÊF∆W#∞¶ñ◊˜'BÊG&ˆñBÊ˜2‰∆ˆ˜W#∞¶ñ◊˜'BÊG&ˆñBÊ˜2Â˜vW$÷ÊvW#∞¶ñ◊˜'BÊG&ˆñBÁ&˜fñFW"Â6WGFñÊw3∞¶ñ◊˜'BÊG&ˆñBÁFWáBÊf˜&÷B‰FFUWFñ«3∞¶ñ◊˜'BÊG&ˆñBÁfñWr‰ÜFñ4fVVF&6¥6ˆÁ7FÁG3∞¶ñ◊˜'BÊG&ˆñBÁfñWr‰∆ñ˜WDñÊf∆FW#∞¶ñ◊˜'BÊG&ˆñBÁfñWrÂfñWs∞¶ñ◊˜'BÊG&ˆñBÁvñFvWB‰'WGFˆ„∞¶ñ◊˜'BÊG&ˆñBÁvñFvWB‰ñ÷vT'WGFˆ„∞¶ñ◊˜'BÊG&ˆñBÁvñFvWB‰ñ÷vUfñWs∞¶ñ◊˜'BÊG&ˆñBÁvñFvWB‰∆ñÊV$∆ñ˜WC∞¶ñ◊˜'BÊG&ˆñBÁvñFvWB‰ÁV÷&W%ñ6∂W#∞¶ñ◊˜'BÊG&ˆñBÁvñFvWBÂ&FñÙ'WGFˆ„∞¶ñ◊˜'BÊG&ˆñBÁvñFvWBÂ7vóF6É∞¶ñ◊˜'BÊG&ˆñBÁvñFvWBÂFWáEfñWs∞¶ñ◊˜'BÊG&ˆñBÁvñFvWBÂFˆ7C∞¶ñ◊˜'B¶fÁFWáB‰FFTf˜&÷C∞¶ñ◊˜'B¶fÁWFñ¬‰FFS∞¶ñ◊˜'B¶fÁWFñ¬‰∆ó7C∞¶ñ◊˜'B¶fÁWFñ¬‰∆ˆ6∆S∞¶ñ◊˜'BñÚÊ6ˆ∆F÷WrÊáW6ÇÊÜV«W"‰áW6ÑÜV«W#∞¶ñ◊˜'B&ñ∂∂Á6ÜóßV∑RÂ6ÜóßV∑S∞†¢ÚÚ÷ñ‚67&VV„¢÷7FW"7vóF6ÇvóFÇ7FGW2¬6WGW7FW2¬7FFó7Fñ72¬BÜÊF∆ñÊr¬6WGFñÊw2¬7FófóGí‡ßV&∆ñ26∆72÷ñ‰7FófóGíWáFVÊG27FófóGí∞¢&ófFR7FFñ2fñÊ¬ñÁB$UıeÂÙT‰$ƒR“¬$UıeÂÙDÂ2“"¬$UÙ‰ıDîb“3∞†¢&ófFR&Vg2&Vg3∞¢&ófFRfñÊ¬ÜÊF∆W"Ví“ÊWrÜÊF∆W"Ñ∆ˆ˜W"ÊvWD÷ñ‰∆ˆ˜W"Çíì∞¢&ófFRfñWr˜EWFFR¬˜EWFFT6ÜV6≥∞¢&ófFRÊG&ˆñBÊ‰∆W'DFñ∆ˆrWFFñÊs∞¢&ófFRfñWr˜E6∆VW¬˜D6"¬7FGW4FWFñ«2¬6WGW6V7Fñˆ‚¬6Üˆñ6U6∂ó¬6Üˆñ6T◊WFR¬6Üˆñ6Tˆfb¬˜DFÁ2¬˜DWFÛ∞¢&ófFRñ÷vT'WGFˆ‚˜vW#∞¢&ófFRFWáEfñWr7FGW5FóF∆R¬7FGW4FW63∞¢&ófFRFWáEfñWr7FE6∂óVB¬7FE&W7V÷R¬7FD◊WFVB¬7FDFÁ3∞¢&ófFR∆ñÊV$∆ñ˜WB6WGW∆ó7B¬WfVÁG3∞¢&ófFR&ˆˆ∆V‚6ÜóßV∑U6VV„∞†¢&ófFRfñÊ¬'VÊÊ&∆R&Vg&W6ÑWfVÁG2“Çí”‚VíÁ˜7BáFÜó3£ß&Vg&W6Çì∞¢&ófFRfñÊ¬'VÊÊ&∆RFñ6∂W"“ÊWr'VÊÊ&∆RÇí∞¢˜fW'&ñFRV&∆ñ2fˆñB'V‚Çí≤&Vg&W6ÇÇì≤VíÁ˜7DFV∆ñVBáFÜó2¬#ì≤–¢”∞¢&ófFRfñÊ¬6ÜóßV∑R‰ˆ‰&ñÊFW%&V6VófVD∆ó7FVÊW"&ñÊFW%W“Çí”‚VíÁ˜7BáFÜó3£ß&Vg&W6Çì∞¢&ófFRfñÊ¬6ÜóßV∑R‰ˆ‰&ñÊFW$FVD∆ó7FVÊW"&ñÊFW$F˜v‚“Çí”‚VíÁ˜7BáFÜó3£ß&Vg&W6Çì∞¢&ófFRfñÊ¬6ÜóßV∑R‰ˆÂ&WVW7EW&÷ó76ñˆÂ&W7V«D∆ó7FVÊW"6ÜóßV∑U&W7V«B“Ü6ˆFR¬&W7V«Bí”‚VíÁ˜7BáFÜó3£ß&Vg&W6Çì∞¢&ófFRfñÊ¬áW6ÑÜV«W"‰∆ó7FVÊW"ÜV«W$6ÜÊvVB“6ˆÊÊV7FVB”‚VíÁ˜7BáFÜó3£ß&Vg&W6Çì∞†¢˜fW'&ñFR&˜FV7FVBfˆñBˆ‰7&VFRÑ'VÊF∆R"í∞¢7WW"Êˆ‰7&VFRÜ"ì∞¢6WD6ˆÁFVÁEfñWrÖ"Ê∆ñ˜WBÊ7FófóGïˆ÷ñ‚ì∞¢ñÁ6WG2Ê«íáFÜó2¬fñÊEfñWt'îñBÖ"ÊñBÁ&ˆ˜Bíì∞¢&Vg2“ÊWr&Vg2áFÜó2ì∞†¢˜vW"“fñÊEfñWt'îñBÖ"ÊñBÁ˜vW"ì∞¢7FGW5FóF∆R“fñÊEfñWt'îñBÖ"ÊñBÁ7FGW5˜FóF∆Rì∞¢7FGW4FW62“fñÊEfñWt'îñBÖ"ÊñBÁ7FGW5ˆFW62ì∞¢7FGW4FWFñ«2“fñÊEfñWt'îñBÖ"ÊñBÁ7FGW5ˆFWFñ«2ì∞¢6WGW6V7Fñˆ‚“fñÊEfñWt'îñBÖ"ÊñBÁ6WGW˜6V7Fñˆ‚ì∞¢6WGW∆ó7B“fñÊEfñWt'îñBÖ"ÊñBÁ6WGWˆ∆ó7Bì∞¢7FE6∂óVB“fñÊEfñWt'îñBÖ"ÊñBÁ7FE˜6∂óVBì∞¢7FE&W7V÷R“fñÊEfñWt'îñBÖ"ÊñBÁ7FE˜&W7V÷Rì∞¢7FD◊WFVB“fñÊEfñWt'îñBÖ"ÊñBÁ7FEˆ◊WFVBì∞¢7FDFÁ2“fñÊEfñWt'îñBÖ"ÊñBÁ7FEˆFÁ2ì∞¢WfVÁG2“fñÊEfñWt'îñBÖ"ÊñBÊWfVÁG2ì∞†¢∆&V¬Ö"ÊñBÁ7EˆFWFV7B¬"Á7G&ñÊrÁ7EˆFWFV7Bì∞¢∆&V¬Ö"ÊñBÁ7E˜6∂ó¬"Á7G&ñÊrÁ7E˜6∂óì∞¢∆&V¬Ö"ÊñBÁ7EˆFÁ2¬"Á7G&ñÊrÁ7EˆFÁ2ì∞¢6Üˆñ6U6∂ó“&˜rÖ"ÊñBÊ6Üˆñ6U˜6∂ó¬"Á7G&ñÊrÊ÷ˆFU˜6∂ó¬"Á7G&ñÊrÊ÷ˆFU˜6∂óˆFW62ì∞¢6Üˆñ6T◊WFR“&˜rÖ"ÊñBÊ6Üˆñ6Uˆ◊WFR¬"Á7G&ñÊrÊ÷ˆFUˆ◊WFR¬"Á7G&ñÊrÊ÷ˆFUˆ◊WFUˆFW62ì∞¢6Üˆñ6Tˆfb“&˜rÖ"ÊñBÊ6Üˆñ6Uˆˆfb¬"Á7G&ñÊrÊ÷ˆFUˆˆfb¬"Á7G&ñÊrÊ÷ˆFUˆˆfeˆFW62ì∞¢˜DFÁ2“&˜rÖ"ÊñBÊ˜EˆFÁ2¬"Á7G&ñÊrÊ˜EˆFÁ2¬"Á7G&ñÊrÊ˜EˆFÁ5ˆFW62ì∞¢˜E6∆VW“&˜rÖ"ÊñBÊ˜E˜6∆VW¬"Á7G&ñÊrÊ˜E˜6∆VW¬"Á7G&ñÊrÁ6∆VWˆFW65ˆˆfbì∞¢˜D6"“&˜rÖ"ÊñBÊ˜Eˆ6"¬"Á7G&ñÊrÊ˜Eˆ6"¬"Á7G&ñÊrÊ6%˜6∂óì∞¢fñWr˜E'V∆W2“&˜rÖ"ÊñBÊ˜E˜'V∆W2¬"Á7G&ñÊrÊ˜E˜'V∆W2¬"Á7G&ñÊrÊ˜E˜'V∆W5ˆFW62ì∞¢fñWr˜EFW7B“&˜rÖ"ÊñBÊ˜E˜FW7B¬"Á7G&ñÊrÊ˜E˜FW7B¬"Á7G&ñÊrÊ˜E˜FW7EˆFW62ì∞¢˜EFW7BÊfñÊEfñWt'îñBÖ"ÊñBÊ6ÜWg&ˆ‚íÁ6WEfó6ñ&ñ∆óGíÖfñWr‰tÙ‰Rì∞†¢G'í∞¢7G&ñÊrb“vWE6∂vT÷ÊvW"ÇíÊvWE6∂vTñÊfÚÜvWE6∂vTÊ÷RÇí¬íÁfW'6ñˆ‰Ê÷S∞¢ÇÖFWáEfñWrífñÊEfñWt'îñBÖ"ÊñBÁfW'6ñˆ‚ííÁ6WEFWáBÜvWE7G&ñÊrÖ"Á7G&ñÊrÁfW'6ñˆ‚¬bíì∞¢“6F6ÇÖ6∂vT÷ÊvW"‰Ê÷TÊ˜Df˜VÊDWÜ6WFñˆ‚ñvÊ˜&VBí∑–†¢˜vW"Á6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚∞¢bÁW&f˜&‘ÜFñ4fVVF&6≤ÑÜFñ4fVVF&6¥6ˆÁ7FÁG2‰4ÙÂDUÖEÙ4ƒî4≤ì∞¢ñbá&Vg2ÊVÊ&∆VBÇííáW6ÇÁ6WDVÊ&∆VBáFÜó2¬f«6Rì∞¢V«6RGW&‰ˆ‚Çì∞¢&Vg&W6ÇÇì∞¢“ì∞†¢6Üˆñ6U6∂óÁ6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚6WD÷ˆFRÖ&Vg2‰‘ÙDUı$U5D%Bíì∞¢6Üˆñ6T◊WFRÁ6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚6WD÷ˆFRÖ&Vg2‰‘ÙDUÙ’UDRíì∞¢6Üˆñ6TˆfbÁ6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚6WD÷ˆFRÖ&Vg2‰‘ÙDUÙÙdbíì∞†¢˜DFÁ2Á6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚∞¢&ˆˆ∆V‚ˆ‚“&Vg2ÊFÁ2Çì∞¢&Vg2ÊFÁ2Üˆ‚ì∞¢ñÁFVÁB6ˆÁ6VÁB“ˆ‚bb&Vg2ÊVÊ&∆VBÇíÚgÂ6W'fñ6RÁ&W&RáFÜó2í¢ÁV∆√∞¢ñbÜ6ˆÁ6VÁB“ÁV∆¬í7F'D7FófóGîf˜%&W7V«BÜ6ˆÁ6VÁB¬$UıeÂÙDÂ2ì∞¢V«6RáW6ÇÊ«îFÁ2áFÜó2ì∞¢&Vg&W6ÇÇì∞¢VíÁ˜7DFV∆ñVBáFÜó3£ß&Vg&W6Ç¬Cì∞¢“ì∞¢˜E6∆VWÁ6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚6Üˆ˜6U6∆VWÇíì∞¢˜D6"Á6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚6Üˆ˜6T6"Çíì∞¢˜E'V∆W2Á6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚7F'D7FófóGíÜÊWrñÁFVÁBáFÜó2¬'V∆W47FófóGíÊ6∆72ííì∞¢ñbÑ'Vñ∆D6ˆÊfñr‰DT%Trí˜EFW7BÁ6WDˆ‰∆ˆÊt6∆ñ6¥∆ó7FVÊW"áb”‚∞¢6∂óW"ÊFV'Vtf˜&6U∆ñ∆ó7DfóÇ“G'VS∞¢Fˆ7BÖ6∂óW"Á7F'BáFÜó2¬G'VRíÚ"Á7G&ñÊrÁFW7E˜7F'FVB¢"Á7G&ñÊrÁFW7Eˆ'W7íì∞¢&WGW&‚G'VS∞¢“ì∞¢˜EFW7BÁ6WDˆ‰6∆ñ6¥∆ó7FVÊW"áb”‚∞¢ñbÇ6ÜV∆¬Á&VGíÇíí≤Fˆ7BÖ"Á7G&ñÊrÁFW7EˆÊVVG5˜6ÜóßV∑Rì≤˜VÂ6∂ó6WGWÇì≤&WGW&„≤–¢ÚÚvóFÜ˜WB7˜Fñgí6W76ñˆ‚FÜW&Ró2Ê˜FÜñÊrFÚ&W7F'C¢FÜRFW7Bv˜V∆BFÚÊ˜FÜñÊr‡¢ñbÇEvF6ÜW"ÊÜ5?w”ªhëÈÏ∂ªßq´^v›W‹\õZ\‹⁄[€é¬à[ùX›[€àHT⁄[ö[ú›[Y
+\ H»ãú›ö[ôÀòX›[€ó‹Ÿ]›\àT⁄[úù[õö[ô 
+H»ãú›ö[ôÀòX›[€ó€‹[ààãú›ö[ôÀòX›[€óÿ[›Œ¬àŸ]\õ› ãú›ö[ôÀúŸ]\‹⁄^ùZ›K\ÿÀX›[€ãàOà¬àYà
+⁄[úù[õö[ô 
+H	âàT⁄[ú⁄^ùZ›TôXYJ
+JH⁄[úô\]Y\›\õZ\‹⁄[€ä
+N¬à[ŸH›\ùX›]ö]Jô]»[ù[ù
+\À⁄^ùZ›TŸ]\X›]ö]Kò€\‹ JN¬àJN¬àH[ŸHYà
+ôYúÀúZ\ôY
 
-import android.Manifest;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.ComponentName;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.net.VpnService;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.PowerManager;
-import android.provider.Settings;
-import android.text.format.DateUtils;
-import android.view.HapticFeedbackConstants;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.NumberPicker;
-import android.widget.RadioButton;
-import android.widget.Switch;
-import android.widget.TextView;
-import android.widget.Toast;
-import java.text.DateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import io.coldmew.hush.helper.HushHelper;
-import rikka.shizuku.Shizuku;
+H	âàR[\ê€€ùõ€õ€ï⁄YöJ\ JH¬àÀ»Ÿôà⁄KQöHH[\àÿ[õõ››\ù
+⁄\ô[\‹»XùYŸ⁄[ô»ôYY»⁄KQöJNàô\›[YH€›[õ›àÀ»€‹öÀ[ô\⁄ô\›[Y\»ûH]Ÿ[à⁄[à⁄KQöH\»òX⁄ÀÇàŸ]\õ› ãú›ö[ôÀúŸ]\‹⁄⁄\ãú›ö[ôÀúŸ]\‹⁄⁄\›⁄YöKãú›ö[ôÀòX›[€ó›⁄YöKààOà‹[äô]»[ù[ù
+ùZ[ïëTî“S”ãî—◊“SïèHéH»Ÿ][ô‹Àî[ô[êP’S”ó’“QíHàŸ][ô‹ÀêP’S”ó’“QíW‘—USë‘ JJN¬àH[ŸHYà
+ôYúÀúZ\ôY
 
-// Main screen: master switch with status, setup steps, statistics, ad handling, settings, activity.
-public class MainActivity extends Activity {
-    private static final int REQ_VPN_ENABLE = 1, REQ_VPN_DNS = 2, REQ_NOTIF = 3;
+JH¬àõ€€X[à\H[\ê€€ùõ€òÿ[ïŸŸ€QXùYŸ⁄[ô \ H[\ê€€ùõ€ôXùYŸ⁄[ô”€ä\ N¬àÀ»⁄\ô[\‹»XùYŸ⁄[ô»[ôXYH€éàH[\à›‹Yõ‹à[õ›\àôX\€€à
+KôÀà]Ÿ\›‹[ô KÇà[ù\ÿ»H]\»ãú›ö[ôÀúŸ]\‹⁄⁄\€Ÿôàà[\ê€€ùõ€ôXùYŸ⁄[ô”€ä\ H»ãú›ö[ôÀúŸ]\‹⁄⁄\‹ô\›[YW€€ààãú›ö[ôÀúŸ]\‹⁄⁄\‹ô\›[YN¬àŸ]\õ› ãú›ö[ôÀúŸ]\‹⁄⁄\\ÿÀà\»ãú›ö[ôÀòX›[€ó‹ô\›[YHàãú›ö[ôÀòX›[€ó€‹[ãàOà¬àYà
+\
+H»ãúŸ][òXõY
+ò[ŸJN»[\ê€€ùõ€ô[ú›\ôJ\ÀùYKùYJN»Bà[ŸH‹[î⁄⁄\Ÿ]\
 
-    private Prefs prefs;
-    private final Handler ui = new Handler(Looper.getMainLooper());
-    private View optUpdate, optUpdateCheck;
-    private android.app.AlertDialog updating;
-    private View optSleep, optCar, statusDetails, setupSection, choiceSkip, choiceMute, choiceOff, optDns, optAuto;
-    private ImageButton power;
-    private TextView statusTitle, statusDesc;
-    private TextView statSkipped, statResume, statMuted, statDns;
-    private LinearLayout setupList, events;
-    private boolean shizukuSeen;
+N¬àJN¬àH[ŸH¬àõ€€X[àYÿZ[àH[\ê€€ùõ€õ\›ô\›[
 
-    private final Runnable refreshEvents = () -> ui.post(this::refresh);
-    private final Runnable ticker = new Runnable() {
-        @Override public void run() { refresh(); ui.postDelayed(this, 2000); }
-    };
-    private final Shizuku.OnBinderReceivedListener binderUp = () -> ui.post(this::refresh);
-    private final Shizuku.OnBinderDeadListener binderDown = () -> ui.post(this::refresh);
-    private final Shizuku.OnRequestPermissionResultListener shizukuResult = (code, result) -> ui.post(this::refresh);
-    private final HushHelper.Listener helperChanged = connected -> ui.post(this::refresh);
+HOH[\ê€€ùõ€îô\›[ìì’‘RTëQ¬àŸ]\õ› ãú›ö[ôÀúŸ]\‹⁄⁄\YÿZ[à»ãú›ö[ôÀúŸ]\‹⁄⁄\‹Z\ààãú›ö[ôÀúŸ]\‹⁄⁄\€ô]Àãú›ö[ôÀòX›[€ó‹Ÿ]›\ààOà‹[î⁄⁄\Ÿ]\
 
-    @Override protected void onCreate(Bundle b) {
-        super.onCreate(b);
-        setContentView(R.layout.activity_main);
-        Insets.apply(this, findViewById(R.id.root));
-        prefs = new Prefs(this);
+JN¬àBàBÇàÀ»îô\›\ù]]€X]Xÿ[HYù\àHôXõ€›éà⁄›€à€òŸH\⁄\»Z\ôY»\ÿ‹öXô\»H\ã\€ôHô\›[Çàö]ò]Hõ⁄Yô[ô\ê]]‘ô\›\ù
 
-        power = findViewById(R.id.power);
-        statusTitle = findViewById(R.id.status_title);
-        statusDesc = findViewById(R.id.status_desc);
-        statusDetails = findViewById(R.id.status_details);
-        setupSection = findViewById(R.id.setup_section);
-        setupList = findViewById(R.id.setup_list);
-        statSkipped = findViewById(R.id.stat_skipped);
-        statResume = findViewById(R.id.stat_resume);
-        statMuted = findViewById(R.id.stat_muted);
-        statDns = findViewById(R.id.stat_dns);
-        events = findViewById(R.id.events);
+H¬àõ€€X[à⁄›»H[\ê€€ùõ€ú›\‹ùY
 
-        label(R.id.st_detect, R.string.st_detect);
-        label(R.id.st_skip, R.string.st_skip);
-        label(R.id.st_dns, R.string.st_dns);
-        choiceSkip = row(R.id.choice_skip, R.string.mode_skip, R.string.mode_skip_desc);
-        choiceMute = row(R.id.choice_mute, R.string.mode_mute, R.string.mode_mute_desc);
-        choiceOff = row(R.id.choice_off, R.string.mode_off, R.string.mode_off_desc);
-        optDns = row(R.id.opt_dns, R.string.opt_dns, R.string.opt_dns_desc);
-        optSleep = row(R.id.opt_sleep, R.string.opt_sleep, R.string.sleep_desc_off);
-        optCar = row(R.id.opt_car, R.string.opt_car, R.string.car_skip);
-        View optRules = row(R.id.opt_rules, R.string.opt_rules, R.string.opt_rules_desc);
-        View optTest = row(R.id.opt_test, R.string.opt_test, R.string.opt_test_desc);
-        optTest.findViewById(R.id.chevron).setVisibility(View.GONE);
+H	âàôYúÀúZ\ôY
 
-        try {
-            String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            ((TextView) findViewById(R.id.version)).setText(getString(R.string.version, v));
-        } catch (PackageManager.NameNotFoundException ignored) {}
+H	âà\ôYúÀúõ€›
 
-        power.setOnClickListener(v -> {
-            v.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK);
-            if (prefs.enabled()) Hush.setEnabled(this, false);
-            else turnOn();
-            refresh();
-        });
+N»À»õ€›ôYY»õ»XùYŸ⁄[ô¬à[ùö\»H⁄›»»öY]ÀïíT“PìHàöY]Àë””ëN¬à‹]]ÀúŸ]ö\⁄Xö[]Jö\ N¬àö[ôöY]–ûRY
+ãöYõ‹ÿ]]◊Ÿ]öY\äKúŸ]ö\⁄Xö[]Jö\ N¬àYà
+\⁄› Hô]\õé¬àõ€€X[àÿ[àH[\ê€€ùõ€òÿ[ïŸŸ€QXùYŸ⁄[ô \ K€àHôYúÀò]]‘ô\›\ù
 
-        choiceSkip.setOnClickListener(v -> setMode(Prefs.MODE_RESTART));
-        choiceMute.setOnClickListener(v -> setMode(Prefs.MODE_MUTE));
-        choiceOff.setOnClickListener(v -> setMode(Prefs.MODE_OFF));
+H	âàÿ[é¬à›ö[ô»\›HôYúÀú€ôU\›
 
-        optDns.setOnClickListener(v -> {
-            boolean on = !prefs.dns();
-            prefs.dns(on);
-            Intent consent = on && prefs.enabled() ? VpnService.prepare(this) : null;
-            if (consent != null) startActivityForResult(consent, REQ_VPN_DNS);
-            else Hush.applyDns(this);
-            refresh();
-            ui.postDelayed(this::refresh, 400);
-        });
-        optSleep.setOnClickListener(v -> chooseSleep());
-        optCar.setOnClickListener(v -> chooseCar());
-        optRules.setOnClickListener(v -> startActivity(new Intent(this, RulesActivity.class)));
-        if (BuildConfig.DEBUG) optTest.setOnLongClickListener(v -> {
-            Skipper.debugForcePlaylistFix = true;
-            toast(Skipper.start(this, true) ? R.string.test_started : R.string.test_busy);
-            return true;
-        });
-        optTest.setOnClickListener(v -> {
-            if (!Shell.ready()) { toast(R.string.test_needs_shizuku); openSkipSetup(); return; }
-            // Without a Spotify session there is nothing to restart: the test would do nothing.
-            if (!AdWatcher.hasSpotify()) { toast(R.string.test_needs_spotify); return; }
-            toast(Skipper.start(this, true) ? R.string.test_started : R.string.test_busy);
-        });
-        optAuto = row(R.id.opt_auto, R.string.opt_auto, R.string.opt_auto_desc);
-        optAuto.setOnClickListener(v -> toggleAutoRestart());
-        optUpdate = row(R.id.opt_update, R.string.opt_update, R.string.opt_update);
-        optUpdate.setOnClickListener(v -> startUpdate());
-        optUpdateCheck = row(R.id.opt_update_check, R.string.opt_update_check, R.string.opt_update_check_desc);
-        optUpdateCheck.setOnClickListener(v -> {
-            prefs.updateCheck(!prefs.updateCheck());
-            Updater.schedule(this);
-            refresh();
-        });
-        View optDiag = row(R.id.opt_diag, R.string.opt_diag, R.string.opt_diag_desc);
-        optDiag.findViewById(R.id.chevron).setVisibility(View.GONE);
-        optDiag.setOnClickListener(v -> copyDiagnostics());
-        findViewById(R.id.stats_reset).setOnClickListener(v -> { prefs.resetStats(); Hush.refreshNotification(this); refresh(); });
-        findViewById(R.id.events_clear).setOnClickListener(v -> Events.clear(this));
+N¬à[ù\ÿ»HXÿ[à»ãú›ö[ôÀõ‹ÿ]]◊Ÿ\ÿ◊€€à[€à»ãú›ö[ôÀõ‹ÿ]]◊Ÿ\ÿ¬ààôYúÀïT’‘–QëKô\]X[ \›
+H»ãú›ö[ôÀõ‹ÿ]]◊Ÿ\ÿ◊‹ÿYôBààôYúÀïT’”ëQQ◊””ãô\]X[ \›
+H»ãú›ö[ôÀõ‹ÿ]]◊Ÿ\ÿ◊€ôYY»àãú›ö[ôÀõ‹ÿ]]◊Ÿ\ÿ◊€€é¬à
 
-        if (getIntent().getBooleanExtra(Updater.EXTRA_UPDATE, false)) startUpdate();   // "Update" in the notification
+^öY] H‹]]Àôö[ôöY]–ûRY
+ãöYú›[[X\ûJJKúŸ]^
+\ÿ N¬à›⁄]⁄»H‹]]Àôö[ôöY]–ûRY
+ãöYùŸŸ€JN¬àÀúŸ]⁄X⁄ŸY
+€äN¬àÀúŸ][òXõY
+ÿ[äN¬à‹]]ÀúŸ][òXõY
+ÿ[äN¬à‹]]ÀúŸ][Jÿ[à»YààçYäN¬àYà
+ùZ[ïëTî“S”ãî—◊“SïèHÃ
+H‹]]ÀúŸ]›]Q\ÿ‹ö\[€äŸ]›ö[ô €à»ãú›ö[ôÀú›]W€€ààãú›ö[ôÀú›]W€ŸôäJN¬àBÇàö]ò]Hõ⁄YŸ]\õ› [ù]K[ù\ÿÀ[ùX›[€ãöY]Àì€ê€X⁄”\›[ô\à€X⁄ H¬àYà
+Ÿ]\\›ôŸ]⁄[€›[ù
 
-        try {
-            Shizuku.addBinderReceivedListenerSticky(binderUp);
-            Shizuku.addBinderDeadListener(binderDown);
-            Shizuku.addRequestPermissionResultListener(shizukuResult);
-        } catch (Throwable ignored) {}
-    }
+Hà
+HŸ]\\›òYöY] ]öY\ä
+JN¬àöY]»õ›»H^[›][ôõ]\ãôúõ€J\ Kö[ôõ]Jãõ^[›]úõ›◊‹Ÿ]\Ÿ]\\›ò[ŸJN¬à
 
-    @Override protected void onNewIntent(Intent i) {
-        super.onNewIntent(i);
-        if (i.getBooleanExtra(Updater.EXTRA_UPDATE, false)) startUpdate();
-    }
+^öY] Hõ›Àôö[ôöY]–ûRY
+ãöYù]JJKúŸ]^
+]JN¬à
 
-    // Update to the latest release: Hush checks, downloads and verifies it, then installs it
-    // (through its helper without any prompt, or with Android's installer). Settings are kept.
-    private void startUpdate() {
-        if (updating != null) return;
-        updating = new AlertDialog.Builder(this).setMessage(R.string.update_working).setCancelable(false).show();
-        Updater.updateNow(this, (r, release) -> ui.post(() -> {
-            if (updating != null) { updating.dismiss(); updating = null; }
-            switch (r) {
-                case UP_TO_DATE: Toast.makeText(this, getString(R.string.update_latest, Updater.version(this)), Toast.LENGTH_LONG).show(); break;
-                case NO_NETWORK: toast(R.string.update_offline); break;
-                case BAD_DOWNLOAD: toast(R.string.update_bad); break;
-                case FAILED: toast(R.string.update_failed); break;
-                case NEEDS_PERMISSION:
-                    toast(R.string.update_permission);
-                    open(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
-                    break;
-                default: break;   // installed (Hush restarts) or Android's installer is asking
-            }
-            refresh();
-        }));
-    }
+^öY] Hõ›Àôö[ôöY]–ûRY
+ãöYô\ÿ JKúŸ]^
+\ÿ N¬àù]€ààHõ›Àôö[ôöY]–ûRY
+ãöYòX›[€äN¬àãúŸ]^
+X›[€äN¬àãúŸ]€€ù[ù\ÿ‹ö\[€äŸ]›ö[ô X›[€äH
+»éàà
+»Ÿ]›ö[ô ]JJN¬àãúŸ]€ê€X⁄”\›[ô\ä€X⁄ N¬àŸ]\\›òYöY] õ› N¬àBÇàö]ò]HöY]»]öY\ä
+H¬àöY]»Hô]»öY] \ N¬àúŸ]òX⁄Ÿ‹õ›[ô€€‹äŸ]€€‹äãò€€‹ãô]öY\äJN¬àúŸ][\‹ù[ùõ‹êXÿŸ\‹⁄Xö[]JöY]ÀíST‘ïSï—ì‘ó–P–—T‘“PíSUW”ì N¬à[ôX\ì^[›]ì^[›]\ò[\»Hô]»[ôX\ì^[›]ì^[›]\ò[\ [ôX\ì^[›]ì^[›]\ò[\ÀìPU“‘TëSï
+JJN¬àúŸ]X\ô⁄[î›\ù
+
+å
+JN¬àúŸ]X\ô⁄[ë[ô
+
+å
+JN¬àúŸ]^[›]\ò[\ 
+N¬àô]\õà¬àBÇàö]ò]Hõ⁄Yô[ô\ë]ô[ù 
+H¬à\›]ô[ùÀë]ô[ùà\›H]ô[ùÀúôXŸ[ù
+\ N¬à]ô[ùÀúô[[›ôP[öY]‹ 
+N¬à[ùàHX]õZ[ä\›ú⁄^ôJ
+KLäN¬à]Qõ‹õX][YQõ]H[ôõ⁄Yù^ôõ‹õX]ë]Qõ‹õX]ôŸ][YQõ‹õX]
+\ N¬à]Qõ‹õX]^Qõ]H]Qõ‹õX]ôŸ]]R[ú›[òŸJ]Qõ‹õX]î“‘ï
+N¬àõ‹à
+[ùHH»Hé»J  H¬à]ô[ùÀë]ô[ùHH\›ôŸ]
+JN¬àöY]»õ›»H^[›][ôõ]\ãôúõ€J\ Kö[ôõ]Jãõ^[›]úõ›◊Ÿ]ô[ù]ô[ùÀò[ŸJN¬à
 
-    @Override protected void onResume() {
-        super.onResume();
-        Events.listen(refreshEvents);
-        HushHelper.addListener(helperChanged);
-        ui.post(ticker);
-        if (prefs.enabled()) Hush.applyDns(this);   // e.g. VPN was taken over by another app meanwhile
-        AdWatcher.ensureConnected(this);
-        // Spotify's background setting may have been changed in Settings meanwhile: allow it again
-        // (off the main thread).
-        if (Shell.ready()) new Thread(() -> {
-            SpotifyBackground.ensureAllowed(this);
-            // The permission to switch Wireless debugging may have been refused when the helper
-            // connected (Xiaomi: until USB debugging (Security settings) is on): ask again.
-            if (HushHelper.ready() && Build.VERSION.SDK_INT >= 33 && !HelperControl.canToggleDebugging(this))
-                Shell.run(io.coldmew.hush.helper.Commands.GRANT_SECURE_SETTINGS, getPackageName());
-            ui.post(this::refresh);
-        }, "hush-spotify-bg").start();
-    }
+[XYŸUöY] Hõ›Àôö[ôöY]–ûRY
+ãöYô›
+JKúŸ][XYŸU[ù\›
+€€‹î›]S\›ùò[YSŸäŸ]€€‹ä⁄[ô€€‹äKö⁄[ô
+JJJN¬à
 
-    @Override protected void onPause() {
-        super.onPause();
-        Events.unlisten(refreshEvents);
-        HushHelper.removeListener(helperChanged);
-        ui.removeCallbacks(ticker);
-    }
+^öY] Hõ›Àôö[ôöY]–ûRY
+ãöYõ\Ÿ JKúŸ]^
+Kõ\Ÿ N¬à]HHô]»]JKù[YJN¬à
 
-    @Override protected void onDestroy() {
-        super.onDestroy();
-        try {
-            Shizuku.removeBinderReceivedListener(binderUp);
-            Shizuku.removeBinderDeadListener(binderDown);
-            Shizuku.removeRequestPermissionResultListener(shizukuResult);
-        } catch (Throwable ignored) {}
-    }
-
-    // What happens to ads while Android Auto is connected (used instead of Skip; Mute and Do nothing
-    // above apply in the car too).
-    private static final String[] CAR_MODES = {Prefs.MODE_RESTART, Prefs.MODE_MUTE, Prefs.MODE_OFF};
-    private static final int[] CAR_LABELS = {R.string.car_skip, R.string.car_mute, R.string.car_off};
-
-    private void chooseCar() {
-        CharSequence[] items = new CharSequence[CAR_MODES.length];
-        int checked = 0;
-        for (int i = 0; i < CAR_MODES.length; i++) {
-            items[i] = getString(CAR_LABELS[i]);
-            if (CAR_MODES[i].equals(prefs.carMode())) checked = i;
-        }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.opt_car)
-                .setSingleChoiceItems(items, checked, (d, which) -> {
-                    prefs.carMode(CAR_MODES[which]);
-                    AdWatcher.recheck();
-                    refresh();
-                    d.dismiss();
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    private int carDesc() {
-        String m = prefs.carMode();
-        return Prefs.MODE_MUTE.equals(m) ? R.string.car_desc_mute : Prefs.MODE_OFF.equals(m) ? R.string.car_desc_off : R.string.car_desc_skip;
-    }
-
-    // Same choices as Spotify's own sleep timer, a custom time, and "Turn off" while one is running.
-    private void chooseSleep() {
-        int n = SleepTimer.CHOICES.length;
-        boolean on = SleepTimer.active(this);
-        CharSequence[] items = new CharSequence[on ? n + 2 : n + 1];
-        for (int i = 0; i < n; i++) {
-            int m = SleepTimer.CHOICES[i];
-            items[i] = m == SleepTimer.END_OF_TRACK ? getString(R.string.sleep_eot)
-                    : m == 60 ? getString(R.string.sleep_hour) : getString(R.string.sleep_minutes, m);
-        }
-        items[n] = getString(R.string.sleep_custom);
-        if (on) items[n + 1] = getString(R.string.sleep_off);
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.opt_sleep)
-                .setItems(items, (d, which) -> {
-                    if (which == n) { chooseCustomSleep(); return; }
-                    if (which == n + 1) SleepTimer.cancel(this);
-                    else SleepTimer.set(this, SleepTimer.CHOICES[which]);
-                    refresh();
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    // Any time from 1 second to 23 h 59 min 59 s, picked as hours, minutes and seconds.
-    private void chooseCustomSleep() {
-        NumberPicker hours = picker(SleepTimer.MAX_SECONDS / 3600, 1), minutes = picker(59, 0), seconds = picker(59, 0);
-        LinearLayout row = new LinearLayout(this);
-        row.setGravity(android.view.Gravity.CENTER);
-        int pad = Math.round(16 * getResources().getDisplayMetrics().density);
-        row.setPadding(pad, pad, pad, 0);
-        row.addView(hours);
-        row.addView(unit(R.string.sleep_custom_hours, pad));
-        row.addView(minutes);
-        row.addView(unit(R.string.sleep_custom_minutes, pad));
-        row.addView(seconds);
-        row.addView(unit(R.string.sleep_custom_seconds, pad));
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.sleep_custom_title)
-                .setView(row)
-                .setPositiveButton(R.string.sleep_custom_start, (d, w) -> {
-                    // A number typed into a picker is taken only when it loses focus; without this,
-                    // typing "30" and pressing Start right away would use the old value.
-                    hours.clearFocus(); minutes.clearFocus(); seconds.clearFocus();
-                    int total = hours.getValue() * 3600 + minutes.getValue() * 60 + seconds.getValue();
-                    if (total < 1) { Toast.makeText(this, R.string.sleep_custom_zero, Toast.LENGTH_SHORT).show(); return; }
-                    SleepTimer.setSeconds(this, total);
-                    refresh();
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    private NumberPicker picker(int max, int value) {
-        NumberPicker p = new NumberPicker(this);
-        p.setMinValue(0);
-        p.setMaxValue(max);
-        p.setValue(value);
-        return p;
-    }
-
-    private TextView unit(int text, int pad) {
-        TextView t = new TextView(this);
-        t.setText(text);
-        t.setPadding(pad / 4, 0, pad / 2, 0);
-        return t;
-    }
-
-    private void setMode(String m) {
-        prefs.mode(m);
-        // The helper is kept running only for Skip; switching to it starts the helper now, so the
-        // next ad is skipped rather than muted while it starts.
-        if (prefs.enabled() && Prefs.MODE_RESTART.equals(m) && (prefs.paired() || prefs.root()) && HelperControl.supported() && !Shell.ready())
-            HelperControl.ensure(this, true, true);
-        else if (Prefs.MODE_RESTART.equals(m)) HelperControl.keepRunningOffWifiAsync(this);
-        AdWatcher.recheck();
-        refresh();
-    }
-
-    private void turnOn() {
-        if (prefs.dns()) {
-            Intent consent = VpnService.prepare(this);
-            if (consent != null) { startActivityForResult(consent, REQ_VPN_ENABLE); return; }
-        }
-        Hush.setEnabled(this, true);
-        askNotificationPermission();
-        afterTurnOn();
-    }
-
-    // Skipping needs a backend: Hush's own helper (started at once if Hush is paired), or Shizuku if
-    // it runs and only needs Hush's permission; otherwise the one-time setup.
-    private void afterTurnOn() {
-        if (!Prefs.MODE_RESTART.equals(prefs.mode()) || Shell.ready()) return;
-        if (Shell.running() && !prefs.paired()) Shell.requestPermission();
-        else if ((prefs.paired() || prefs.root()) && HelperControl.supported()) HelperControl.ensure(this, true, true);
-        else openSkipSetup();
-    }
-
-    private void openSkipSetup() {
-        startActivity(new Intent(this, HelperControl.supported() ? HelperSetupActivity.class : ShizukuSetupActivity.class));
-    }
-
-    // Opt-in automatic restart after a reboot, explained once before it is turned on.
-    private void toggleAutoRestart() {
-        if (!HelperControl.canToggleDebugging(this)) return;
-        if (prefs.autoRestart()) { HelperControl.autoRestartChanged(this, false); refresh(); return; }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.auto_title)
-                .setMessage(R.string.auto_text)
-                .setPositiveButton(R.string.auto_turn_on, (d, w) -> { HelperControl.autoRestartChanged(this, true); refresh(); })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    // Anonymous: maker, model family, Android version, Hush version and state. Nothing personal.
-    private void copyDiagnostics() {
-        String v = "";
-        try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (PackageManager.NameNotFoundException ignored) {}
-        String spotify = "not installed";
-        try { spotify = getPackageManager().getPackageInfo(Hush.SPOTIFY, 0).versionName; } catch (PackageManager.NameNotFoundException ignored) {}
-        StringBuilder fails = new StringBuilder();
-        java.text.SimpleDateFormat time = new java.text.SimpleDateFormat("MM-dd HH:mm", Locale.US);
-        int n = 0;
-        for (Events.Event e : Events.recent(this)) {   // newest first; problems only, without app names
-            if (!Events.FAIL.equals(e.kind) || n++ == 5) continue;
-            fails.append("\n  ").append(time.format(new java.util.Date(e.time))).append(' ')
-                    .append(e.msg.replaceAll("\\(in (?!Spotify\\))[^)]*\\)", "(in another app)"));
-        }
-        String report = "Hush " + v + "\nphone: " + Build.MANUFACTURER + " " + Build.MODEL + ", Android " + Build.VERSION.RELEASE
-                + " (API " + Build.VERSION.SDK_INT + ")\nSpotify: " + spotify + "\nmode: " + prefs.mode() + ", on: " + prefs.enabled()
-                + "\nnetwork: " + (HelperControl.onWifi(this) ? "Wi-Fi" : "no Wi-Fi") + ", Android Auto: " + (Car.connected(this) ? "yes" : "no")
-                + "\n" + HelperControl.diagnostics(this) + Xiaomi.diagnostics(this)
-                + "\nad watcher: " + (AdWatcher.connected() ? "connected" : Hush.listenerEnabled(this) ? "allowed, not connected" : "no access")
-                + "\nrecent problems:" + (fails.length() == 0 ? " none" : fails);
-        android.content.ClipboardManager cm = getSystemService(android.content.ClipboardManager.class);
-        cm.setPrimaryClip(android.content.ClipData.newPlainText("Hush diagnostics", report));
-        if (Build.VERSION.SDK_INT < 33) toast(R.string.diag_copied);   // Android 13+ shows its own confirmation
-    }
-
-    @Override protected void onActivityResult(int req, int res, Intent data) {
-        if (req == REQ_VPN_ENABLE) {
-            if (res != RESULT_OK) { prefs.dns(false); toast(R.string.vpn_denied); }
-            Hush.setEnabled(this, true);
-            askNotificationPermission();
-            afterTurnOn();
-        } else if (req == REQ_VPN_DNS) {
-            if (res == RESULT_OK) Hush.applyDns(this);
-            else { prefs.dns(false); toast(R.string.vpn_denied); }
-        }
-        refresh();
-    }
-
-    private void askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF);
-    }
-
-    @Override public void onRequestPermissionsResult(int req, String[] perms, int[] results) {
-        Hush.refreshNotification(this);
-        refresh();
-    }
-
-    @Override public void onWindowFocusChanged(boolean focus) {
-        super.onWindowFocusChanged(focus);
-        if (focus) refresh();
-    }
-
-    // ---- rendering ----
-
-    private void refresh() {
-        boolean on = prefs.enabled();
-        boolean listener = Hush.listenerEnabled(this);
-        boolean shizuku = Shell.ready();
-        if (shizuku && !shizukuSeen) BackgroundAudio.apply(this);
-        shizukuSeen = shizuku;
-        if (shizuku) Hush.clearSkipAlert(this);
-        boolean dnsRunning = DnsVpnService.running;
-        String m = prefs.mode();
-        boolean skipMode = Prefs.MODE_RESTART.equals(m), muteMode = Prefs.MODE_MUTE.equals(m), offMode = Prefs.MODE_OFF.equals(m);
-
-        // Status card
-        power.setBackgroundResource(on ? R.drawable.bg_power_on : R.drawable.bg_power_off);
-        power.setImageTintList(ColorStateList.valueOf(getColor(on ? R.color.on_accent : R.color.text_dim)));
-        power.setContentDescription(getString(on ? R.string.power_turn_off : R.string.power_turn_on));
-        int title, desc;
-        if (!on) { title = R.string.status_off; desc = R.string.status_off_desc; }
-        else if (!listener && !offMode) { title = R.string.status_attention; desc = R.string.status_need_listener; }
-        else if (skipMode && !shizuku) { title = R.string.status_attention; desc = R.string.status_need_shizuku; }
-        else if (prefs.dns() && !dnsRunning) { title = R.string.status_attention; desc = R.string.status_need_dns; }
-        else if (offMode) { title = R.string.status_dns_only; desc = R.string.status_dns_only_desc; }
-        else if (muteMode) { title = R.string.status_mute; desc = R.string.status_mute_desc; }
-        else { title = R.string.status_skip; desc = R.string.status_skip_desc; }
-        statusTitle.setText(title);
-        statusDesc.setText(desc);
-        if (Build.VERSION.SDK_INT >= 30) power.setStateDescription(getString(on ? R.string.state_on : R.string.state_off));
-
-        statusDetails.setVisibility(on ? View.VISIBLE : View.GONE);
-        if (on) {
-            // Access granted is not enough: Android may not have connected the watcher (see
-            // AdWatcher.ensureConnected, which asks again).
-            boolean watching = listener && AdWatcher.connected();
-            value(R.id.st_detect, offMode ? R.string.v_off : watching ? R.string.v_active : listener ? R.string.v_reconnecting : R.string.v_no_access,
-                    offMode ? R.color.neutral : watching ? R.color.good : listener ? R.color.warn : R.color.bad);
-            value(R.id.st_skip, offMode ? R.string.v_off : muteMode ? R.string.v_mute : !shizuku ? R.string.v_mute_fallback
-                            : HushHelper.ready() ? R.string.v_skip : R.string.v_skip_shizuku,
-                    offMode ? R.color.neutral : skipMode && !shizuku ? R.color.warn : R.color.good);
-            value(R.id.st_dns, !prefs.dns() ? R.string.v_off : dnsRunning ? R.string.v_running : R.string.v_stopped,
-                    !prefs.dns() ? R.color.neutral : dnsRunning ? R.color.good : R.color.warn);
-        }
-
-        // Ad handling and settings
-        choose(choiceSkip, skipMode);
-        choose(choiceMute, muteMode);
-        choose(choiceOff, offMode);
-        ((Switch) optDns.findViewById(R.id.toggle)).setChecked(prefs.dns());
-        if (Build.VERSION.SDK_INT >= 30) optDns.setStateDescription(getString(prefs.dns() ? R.string.state_on : R.string.state_off));
-
-        ((TextView) optSleep.findViewById(R.id.summary)).setText(SleepTimer.describe(this));
-        ((TextView) optCar.findViewById(R.id.summary)).setText(carDesc());
-        renderAutoRestart();
-        String latest = prefs.latestVersion(), current = Updater.version(this);
-        ((TextView) optUpdate.findViewById(R.id.summary)).setText(Updater.newer(latest, current)
-                ? (prefs.latestSummary().isEmpty() ? getString(R.string.opt_update_available_plain, latest)
-                        : getString(R.string.opt_update_available, latest, prefs.latestSummary()))
-                : getString(R.string.opt_update_desc, current));
-        ((Switch) optUpdateCheck.findViewById(R.id.toggle)).setChecked(prefs.updateCheck());
-        if (Build.VERSION.SDK_INT >= 30) optUpdateCheck.setStateDescription(getString(prefs.updateCheck() ? R.string.state_on : R.string.state_off));
-
-        // Statistics
-        long skipped = prefs.get(Prefs.SKIPPED);
-        stat(R.id.cell_skipped, statSkipped, String.valueOf(skipped), R.string.stat_skipped);
-        stat(R.id.cell_resume, statResume, skipped == 0 ? getString(R.string.stat_none)
-                : String.format(Locale.getDefault(), "%.1f s", prefs.get(Prefs.RESUME_MS) / 1000.0 / skipped), R.string.stat_resume);
-        stat(R.id.cell_muted, statMuted, String.valueOf(prefs.get(Prefs.MUTED)), R.string.stat_muted);
-        stat(R.id.cell_dns, statDns, String.valueOf(prefs.get(Prefs.DNS_HITS)), R.string.stat_dns);
-
-        renderSetup(listener, shizuku);
-        renderEvents();
-    }
-
-    private void label(int rowId, int text) {
-        ((TextView) findViewById(rowId).findViewById(R.id.label)).setText(text);
-    }
-
-    private void value(int rowId, int text, int color) {
-        TextView v = findViewById(rowId).findViewById(R.id.value);
-        v.setText(text);
-        Drawable d = getDrawable(R.drawable.dot).mutate();
-        d.setTint(getColor(color));
-        d.setBounds(0, 0, dp(8), dp(8));
-        v.setCompoundDrawablesRelative(d, null, null, null);
-    }
-
-    private View row(int id, int title, int summary) {
-        View r = findViewById(id);
-        ((TextView) r.findViewById(R.id.title)).setText(title);
-        ((TextView) r.findViewById(R.id.summary)).setText(summary);
-        return r;
-    }
-
-    private void choose(View row, boolean selected) {
-        ((RadioButton) row.findViewById(R.id.radio)).setChecked(selected);
-        row.setSelected(selected);
-        if (Build.VERSION.SDK_INT >= 30) row.setStateDescription(selected ? getString(R.string.state_on) : null);
-    }
-
-    private void stat(int cell, TextView value, String text, int label) {
-        value.setText(text);
-        findViewById(cell).setContentDescription(getString(label) + ": " + text);
-    }
-
-    private void renderSetup(boolean listener, boolean shizuku) {
-        setupList.removeAllViews();
-        if (getPackageManager().getLaunchIntentForPackage(Hush.SPOTIFY) == null)
-            setupRow(R.string.setup_spotify, R.string.setup_spotify_missing, R.string.action_install,
-                    v -> open(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + Hush.SPOTIFY))));
-        if (!listener)
-            setupRow(R.string.setup_listener, Xiaomi.phone() ? R.string.setup_listener_desc_xiaomi : R.string.setup_listener_desc, R.string.action_allow, v -> {
-                prefs.listenerAsked(true);
-                Intent i = Build.VERSION.SDK_INT >= 30
-                        ? new Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).putExtra(
-                                Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
-                                new ComponentName(this, AdWatcher.class).flattenToString())
-                        : new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
-                if (!open(i)) open(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
-            });
-        // Android 13+ greys out notification access for apps installed from a browser or file
-        // manager ("Restricted setting") until the user allows it in App info. Apps cannot read that
-        // state, so the way out is shown once Allow did not lead to access.
-        if (!listener && Build.VERSION.SDK_INT >= 33 && prefs.listenerAsked())
-            setupRow(R.string.setup_restricted, R.string.setup_restricted_desc, R.string.action_app_info,
-                    v -> open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()))
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
-        if (prefs.dns() && VpnService.prepare(this) != null)
-            setupRow(R.string.setup_vpn, R.string.setup_vpn_desc, R.string.action_allow, v -> {
-                Intent consent = VpnService.prepare(this);
-                if (consent != null) startActivityForResult(consent, REQ_VPN_DNS);
-            });
-        if (Prefs.MODE_RESTART.equals(prefs.mode()) && !shizuku) renderSkipSetup();
-        // Skipping through Shizuku (e.g. after updating from 1.0.x): offer the switch to Hush's own
-        // helper, which needs no restart of Shizuku after every reboot. Gone once Hush is paired.
-        else if (Prefs.MODE_RESTART.equals(prefs.mode()) && HelperControl.supported() && !prefs.paired() && !prefs.root())
-            setupRow(R.string.setup_no_shizuku, R.string.setup_no_shizuku_desc, R.string.action_set_up, v -> openSkipSetup());
-        // Spotify may not run in the background (Battery > Restricted, or a maker's battery saver):
-        // after a skip it would play without its notification and stop a few minutes later.
-        if (Prefs.MODE_RESTART.equals(prefs.mode()) && shizuku && SpotifyBackground.restricted())
-            setupRow(R.string.setup_spotify_bg, R.string.setup_spotify_bg_desc, R.string.action_fix, v -> {
-                v.setEnabled(false);
-                new Thread(() -> {
-                    boolean ok = SpotifyBackground.allow(this);
-                    ui.post(() -> {
-                        if (!ok) open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + Hush.SPOTIFY)));
-                        refresh();
-                    });
-                }, "hush-spotify-bg").start();
-            });
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-            setupRow(R.string.setup_notifications, R.string.setup_notifications_desc, R.string.action_allow,
-                    v -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF));
-        if (!getSystemService(PowerManager.class).isIgnoringBatteryOptimizations(getPackageName()))
-            setupRow(R.string.setup_battery, Xiaomi.phone() ? R.string.setup_battery_desc_xiaomi : R.string.setup_battery_desc, R.string.action_allow,
-                    v -> open(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + getPackageName()))));
-        // Xiaomi forgot the Autostart Hush set for itself at a restart: only one the user switches on
-        // in Xiaomi's own list lasts, and without it Hush does not start after a restart or update.
-        if (Xiaomi.askAutostart(this))
-            setupRow(R.string.setup_xiaomi_autostart, R.string.setup_xiaomi_autostart_desc, R.string.action_open, v -> {
-                Xiaomi.autostartAsked(this);
-                if (!open(Xiaomi.autostartSettings(this)))
-                    open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            });
-        // Xiaomi without "USB debugging (Security settings)": the helper can't change settings, so
-        // Hush can't switch USB debugging on (keeps its helper running when Wi-Fi drops) nor
-        // Wireless debugging (automatic restart after a reboot). Plain USB debugging, which needs no
-        // Mi account, covers the first (measured on HyperOS 2: the helper kept running with Wi-Fi off
-        // and only that on), so it is asked for first; the Security switch only for the second.
-        boolean xiaomiLimited = Xiaomi.phone() && HushHelper.ready() && !prefs.root() && Build.VERSION.SDK_INT >= 33
-                && !HelperControl.canToggleDebugging(this);
-        Intent devOptions = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        // Still off although Hush tried (see HelperControl.keepRunningOffWifi): only the user can.
-        if (Xiaomi.phone() && HushHelper.ready() && !prefs.root() && Prefs.MODE_RESTART.equals(prefs.mode())
-                && Settings.Global.getInt(getContentResolver(), Settings.Global.ADB_ENABLED, 1) == 0)
-            setupRow(R.string.setup_usb_debugging, R.string.setup_usb_debugging_desc, R.string.action_open, v -> open(devOptions));
-        if (xiaomiLimited)
-            setupRow(R.string.setup_xiaomi_security, R.string.setup_xiaomi_security_desc, R.string.action_open, v -> open(devOptions));
-        setupSection.setVisibility(setupList.getChildCount() > 0 ? View.VISIBLE : View.GONE);
-    }
-
-    // Skipping is not ready. A Shizuku user who has not paired Hush keeps the Shizuku steps; a paired
-    // Hush resumes with one tap (or by itself once Wireless debugging is on); everyone else gets the
-    // one-time setup. Android 8-10 have no Wireless debugging: Shizuku only.
-    private void renderSkipSetup() {
-        if (prefs.root() && HelperControl.supported()) {   // started with root: no Wi-Fi or debugging involved
-            setupRow(R.string.setup_skip, R.string.setup_skip_root, R.string.action_resume, v -> {
-                v.setEnabled(false);
-                HelperControl.ensure(this, false, true);
-            });
-            return;
-        }
-        boolean shizukuUser = Shell.installed(this) && !prefs.paired();
-        if (!HelperControl.supported() || shizukuUser && Shell.running()) {
-            int desc = !Shell.installed(this) ? R.string.setup_shizuku_missing
-                    : !Shell.running() ? R.string.setup_shizuku_stopped : R.string.setup_shizuku_permission;
-            int action = !Shell.installed(this) ? R.string.action_set_up : !Shell.running() ? R.string.action_open : R.string.action_allow;
-            setupRow(R.string.setup_shizuku, desc, action, v -> {
-                if (Shell.running() && !Shell.shizukuReady()) Shell.requestPermission();
-                else startActivity(new Intent(this, ShizukuSetupActivity.class));
-            });
-        } else if (prefs.paired() && !HelperControl.onWifi(this)) {
-            // Off Wi-Fi the helper cannot start (Wireless debugging needs Wi-Fi): Resume could not
-            // work, and Hush resumes by itself when Wi-Fi is back.
-            setupRow(R.string.setup_skip, R.string.setup_skip_wifi, R.string.action_wifi,
-                    v -> open(new Intent(Build.VERSION.SDK_INT >= 29 ? Settings.Panel.ACTION_WIFI : Settings.ACTION_WIFI_SETTINGS)));
-        } else if (prefs.paired()) {
-            boolean tap = HelperControl.canToggleDebugging(this) || HelperControl.debuggingOn(this);
-            // Wireless debugging already on: the helper stopped for another reason (e.g. it kept stopping).
-            int desc = !tap ? R.string.setup_skip_off : HelperControl.debuggingOn(this) ? R.string.setup_skip_resume_on : R.string.setup_skip_resume;
-            setupRow(R.string.setup_skip, desc,
-                    tap ? R.string.action_resume : R.string.action_open, v -> {
-                        if (tap) { v.setEnabled(false); HelperControl.ensure(this, true, true); }
-                        else openSkipSetup();
-                    });
-        } else {
-            boolean again = HelperControl.lastResult() == HelperControl.Result.NOT_PAIRED;
-            setupRow(R.string.setup_skip, again ? R.string.setup_skip_pair : R.string.setup_skip_new, R.string.action_set_up,
-                    v -> openSkipSetup());
-        }
-    }
-
-    // "Restart automatically after a reboot": shown once Hush is paired; describes the per-phone result.
-    private void renderAutoRestart() {
-        boolean show = HelperControl.supported() && prefs.paired() && !prefs.root();   // root needs no debugging
-        int vis = show ? View.VISIBLE : View.GONE;
-        optAuto.setVisibility(vis);
-        findViewById(R.id.opt_auto_divider).setVisibility(vis);
-        if (!show) return;
-        boolean can = HelperControl.canToggleDebugging(this), on = prefs.autoRestart() && can;
-        String test = prefs.phoneTest();
-        int desc = !can ? R.string.opt_auto_desc_old : !on ? R.string.opt_auto_desc
-                : Prefs.TEST_SAFE.equals(test) ? R.string.opt_auto_desc_safe
-                : Prefs.TEST_NEEDS_ON.equals(test) ? R.string.opt_auto_desc_needs : R.string.opt_auto_desc_on;
-        ((TextView) optAuto.findViewById(R.id.summary)).setText(desc);
-        Switch s = optAuto.findViewById(R.id.toggle);
-        s.setChecked(on);
-        s.setEnabled(can);
-        optAuto.setEnabled(can);
-        optAuto.setAlpha(can ? 1f : 0.5f);
-        if (Build.VERSION.SDK_INT >= 30) optAuto.setStateDescription(getString(on ? R.string.state_on : R.string.state_off));
-    }
-
-    private void setupRow(int title, int desc, int action, View.OnClickListener click) {
-        if (setupList.getChildCount() > 0) setupList.addView(divider());
-        View row = LayoutInflater.from(this).inflate(R.layout.row_setup, setupList, false);
-        ((TextView) row.findViewById(R.id.title)).setText(title);
-        ((TextView) row.findViewById(R.id.desc)).setText(desc);
-        Button b = row.findViewById(R.id.action);
-        b.setText(action);
-        b.setContentDescription(getString(action) + ": " + getString(title));
-        b.setOnClickListener(click);
-        setupList.addView(row);
-    }
-
-    private View divider() {
-        View d = new View(this);
-        d.setBackgroundColor(getColor(R.color.divider));
-        d.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1));
-        lp.setMarginStart(dp(20));
-        lp.setMarginEnd(dp(20));
-        d.setLayoutParams(lp);
-        return d;
-    }
-
-    private void renderEvents() {
-        List<Events.Event> list = Events.recent(this);
-        events.removeAllViews();
-        int n = Math.min(list.size(), 12);
-        DateFormat timeFmt = android.text.format.DateFormat.getTimeFormat(this);
-        DateFormat dayFmt = DateFormat.getDateInstance(DateFormat.SHORT);
-        for (int i = 0; i < n; i++) {
-            Events.Event e = list.get(i);
-            View row = LayoutInflater.from(this).inflate(R.layout.row_event, events, false);
-            ((ImageView) row.findViewById(R.id.dot)).setImageTintList(ColorStateList.valueOf(getColor(kindColor(e.kind))));
-            ((TextView) row.findViewById(R.id.msg)).setText(e.msg);
-            Date d = new Date(e.time);
-            ((TextView) row.findViewById(R.id.time)).setText(DateUtils.isToday(e.time) ? timeFmt.format(d) : dayFmt.format(d));
-            events.addView(row);
-        }
-        if (n == 0) {
-            TextView empty = new TextView(this, null, 0, R.style.Text_Secondary);
-            empty.setText(R.string.activity_empty);
-            empty.setPadding(dp(20), dp(12), dp(20), dp(12));
-            events.addView(empty);
-        }
-    }
-
-    private static int kindColor(String kind) {
-        switch (kind) {
-            case Events.SKIP: return R.color.good;
-            case Events.MUTE: return R.color.accent;
-            case Events.FAIL: return R.color.bad;
-            case Events.AD: return R.color.warn;
-            default: return R.color.neutral;
-        }
-    }
-
-    private boolean open(Intent i) {
-        if (i == null) return false;
-        try { startActivity(i); return true; } catch (Exception e) { return false; }
-    }
-
-    private void toast(int res) { Toast.makeText(this, res, Toast.LENGTH_SHORT).show(); }
-
-    private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
-}
+^öY] Hõ›Àôö[ôöY]–ûRY
+ãöYù[YJJKúŸ]^
+]U][Àö\’Ÿ^JKù[YJH»[YQõ]ôõ‹õX]
+
+Hà^Qõ]ôõ‹õX]
+
+JN¬à]ô[ùÀòYöY] õ› N¬àBàYà
+àOH
+H¬à^öY]»[\HHô]»^öY] \Àù[ãú›[Kï^‘ŸX€€ô\ûJN¬à[\KúŸ]^
+ãú›ö[ôÀòX›]ö]WŸ[\JN¬à[\KúŸ]Y[ô 
+å
+K
+LäK
+å
+K
+LäJN¬à]ô[ùÀòYöY] [\JN¬àBàBÇàö]ò]H›]X»[ù⁄[ô€€‹ä›ö[ô»⁄[ô
+H¬à›⁄]⁄
+⁄[ô
+H¬àÿ\ŸH]ô[ùÀî““Tàô]\õàãò€€‹ãô€€Ÿ¬àÿ\ŸH]ô[ùÀìUUNàô]\õàãò€€‹ãòXÿŸ[ù¬àÿ\ŸH]ô[ùÀëêRSàô]\õàãò€€‹ãòòY¬àÿ\ŸH]ô[ùÀêQàô]\õàãò€€‹ãùÿ\õé¬àYò][àô]\õàãò€€‹ãõô]]ò[¬àBàBÇàö]ò]Hõ€€X[à‹[ä[ù[ùJH¬àYà
+HOHù[
+Hô]\õàò[ŸN¬àûH»›\ùX›]ö]JJN»ô]\õàùYN»Hÿ]⁄
+^Ÿ\[€àJH»ô]\õàò[ŸN»BàBÇàö]ò]Hõ⁄Yÿ\›
+[ùô\ H»ÿ\›õXZŸU^
+\Àô\Àÿ\›ìSë’‘“‘ï
+Kú⁄› 
+N»BÇàö]ò]H[ù
+[ùäH»ô]\õàX]úõ›[ô
+à
+àŸ]ô\€›\òŸ\ 
+KôŸ]\‹^SY]öX‹ 
+Kô[ú⁄]JN»BüB

@@ -26,7 +26,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:importantForAccessibility="no"
-                android:src="@drawable/hush_logo" />
+                android:src="@drawable/ritxxshh_logo" />
 
             <TextView
                 style="@style/Text.AppTitle"
@@ -242,6 +242,18 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:gravity="center"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/developer_link"
+            style="@style/Text.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:autoLink="web"
+            android:gravity="center"
+            android:linksClickable="true"
+            android:text="@string/developer_link"
             android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

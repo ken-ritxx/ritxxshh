@@ -1,609 +1,146 @@
-package io.coldmew.hush;
+Y™Áäx-ÆÈ‹j◊ù¢Îi∫⁄+äßj[hëÈ‹¢ÈÌ◊Nµı:-jZ.∂õ≠ñ)ﬁ≥W6∂vRñÚÊ6ˆ∆F÷WrÊáW6É∞†¶ñ◊˜'BÊG&ˆñB‰÷ÊñfW7C∞¶ñ◊˜'BÊG&ˆñBÊ‰Ê˜Fñfñ6Fñˆ„∞¶ñ◊˜'BÊG&ˆñBÊ‰Ê˜Fñfñ6Fñˆ‰÷ÊvW#∞¶ñ◊˜'BÊG&ˆñBÊÂVÊFñÊtñÁFVÁC∞¶ñ◊˜'BÊG&ˆñBÊ6ˆÁFVÁB‰6ˆÁFWáC∞¶ñ◊˜'BÊG&ˆñBÊ6ˆÁFVÁB‰ñÁFVÁC∞¶ñ◊˜'BÊG&ˆñBÊ6ˆÁFVÁBÁ“Â6∂vT÷ÊvW#∞¶ñ◊˜'BÊG&ˆñBÊFF&6R‰6ˆÁFVÁDˆ'6W'fW#∞¶ñ◊˜'BÊG&ˆñBÊÊWB‰6ˆÊÊV7FófóGî÷ÊvW#∞¶ñ◊˜'BÊG&ˆñBÊÊWB‰ÊWGv˜&≥∞¶ñ◊˜'BÊG&ˆñBÊÊWB‰ÊWGv˜&¥6&ñ∆óFñW3∞¶ñ◊˜'BÊG&ˆñBÊÊWB‰ÊWGv˜&µ&WVW7C∞¶ñ◊˜'BÊG&ˆñBÊ˜2‰'Vñ∆C∞¶ñ◊˜'BÊG&ˆñBÊ˜2‰ÜÊF∆W#∞¶ñ◊˜'BÊG&ˆñBÊ˜2‰∆ˆ˜W#∞¶ñ◊˜'BÊG&ˆñBÊ˜2Â7ó7FV‘6∆ˆ6≥∞¶ñ◊˜'BÊG&ˆñBÁ&˜fñFW"Â6WGFñÊw3∞¶ñ◊˜'BÊG&ˆñBÁWFñ¬‰∆ˆs∞¶ñ◊˜'BñÚÊ6ˆ∆F÷WrÊáW6ÇÊF"‰F$6ˆÊÊV7Fñˆ„∞¶ñ◊˜'BñÚÊ6ˆ∆F÷WrÊáW6ÇÊF"‰F$∂Wì∞¶ñ◊˜'BñÚÊ6ˆ∆F÷WrÊáW6ÇÊF"‰F$÷FÁ3∞¶ñ◊˜'BñÚÊ6ˆ∆F÷WrÊáW6ÇÊÜV«W"‰6ˆ÷÷ÊG3∞¶ñ◊˜'BñÚÊ6ˆ∆F÷WrÊáW6ÇÊÜV«W"‰áW6ÑÜV«W#∞¶ñ◊˜'B¶fÁWFñ¬‰'&îFWVS∞¶ñ◊˜'B¶fÁWFñ¬Ê6ˆÊ7W'&VÁB‰WÜV7WF˜%6W'fñ6S∞¶ñ◊˜'B¶fÁWFñ¬Ê6ˆÊ7W'&VÁB‰WÜV7WF˜'3∞†¢ÚÚ∂VW2áW6Çw2˜v‚ÜV«W"'VÊÊñÊr¬6Ú6∂óñÊrv˜&∑2vóFÇáW6Ç2FÜRˆÊ«í‡¢ÚÚ“7F'BÇì¢fñÊG2vó&V∆W72FV'VvvñÊrw2˜'Bˆ‚FÜó2ÜˆÊRÜ‘DÂ2í¬6ˆÊÊV7G2vóFÇáW6Çw2ó&V@¢ÚÚ∂Wí¬7F'G2FÜRÜV«W"ÊBvóG2f˜"óBFÚÜÊB˜fW"óG2&ñÊFW"‡¢ÚÚ“6V∆b÷ÜV∆ñÊs¢ñbFÜRÜV«W"FñW2¬óBó27F'FVBvñ‚ÜB÷˜7B2Fñ÷W2ñ‚÷ñÁWFW2ì≤ñbFÜ@¢ÚÚó2Ê˜B˜76ñ&∆R¬6∂óñÊrf∆«2&6≤FÚ◊WFRÊBˆÊR'FFÚfóÇ"Ê˜Fñfñ6Fñˆ‚ó26Ü˜v‚‡¢ÚÚ“GW&ÊñÊrvó&V∆W72FV'VvvñÊrˆ‚Ü'íFÜRW6W"í7F'G2FÜRÜV«W"'íóG6V∆b‡¢ÚÚ“gFW"&V&ˆ˜BÑÊG&ˆñBGW&Á2vó&V∆W72FV'VvvñÊrˆfbì¢ˆÊR%FFÚ&W7V÷R"Ê˜Fñfñ6Fñˆ‚¬˜"¿¢ÚÚñbFÜRW6W"˜FVBñ‚¬‚WFˆ÷Fñ2&W7F'Bfˆ∆∆˜vVB'íFÜRW"◊ÜˆÊRFW7C¢vó&V∆W72FV'VvvñÊp¢ÚÚó27vóF6ÜVBˆfbvñ‚ÊB∂WBˆfbˆÊ«íñbFÜRÜV«W"7W'fófW2FÜBˆ‚FÜó2ÜˆÊR‡¢ÚÚ“ˆ‚&ˆ˜FVBÜˆÊRFÜRW6W"÷í6Üˆ˜6R&ˆ˜BñÁ7FVBÖ&ˆ˜Bì¢FÜRÜV«W"ó2FÜV‚7F'FVBvóFÇ7R¿¢ÚÚvóFÇÊÚví‘fí˜"vó&V∆W72FV'VvvñÊrñÁfˆ«fVC≤FÜR6÷R&W7F'B∆ñ÷óG2ÊBÊ˜Fñ6W2«í‡¢ÚÚáW6ÇˆÊ«íWfW"6ÜÊvW2FÜRvó&V∆W72FV'VvvñÊr6WGFñÊrÜÊWfW"U4"FV'VvvñÊr˜"FWfV∆˜W"˜FñˆÁ2í¿¢ÚÚÊBˆÊ«ívóFÇu$ïDUı4T5U$Uı4UEDî‰u2Üw&ÁFVBˆÊ6R'íFÜRÜV«W"íˆ‚ÊG&ˆñB2≤‡¶fñÊ¬6∆72ÜV«W$6ˆÁG&ˆ¬∞¢VÁV“&W7V«B≤$TEí¬TÂ5Uı%DTB¬‰ıEıï$TB¬‰ııtîdí¬DT%Tttî‰uÙÙdb¬dîƒTB–†¢7FFñ2fñÊ¬7G&ñÊrD%ıtîdí“&F%˜vñfïˆVÊ&∆VB#∞¢7FFñ2fñÊ¬7G&ñÊrï%Ù‰‘R“%&óGáÖ6ÜÇ#∞¢&ófFR7FFñ2fñÊ¬∆ˆÊrtî‰Dır“¢cÛ√∞¢&ófFR7FFñ2fñÊ¬ñÁB‘Öı$U5D%E2“3∞†¢&ófFR7FFñ2fñÊ¬WÜV7WF˜%6W'fñ6Rv˜&∂W"“WÜV7WF˜'2ÊÊWu6ñÊv∆UFá&VDWÜV7WF˜"á"”‚ÊWrFá&VBá"¬&áW6Ç÷ÜV«W""íì∞¢&ófFR7FFñ2fñÊ¬ÜÊF∆W"÷ñ‚“ÊWrÜÊF∆W"Ñ∆ˆ˜W"ÊvWD÷ñ‰∆ˆ˜W"Çíì∞¢&ófFR7FFñ2fñÊ¬'&îFWVSƒ∆ˆÊs‚&W7F'G2“ÊWr'&îFWVS√‚Çì∞¢&ófFR7FFñ2fˆ∆Fñ∆R&W7V«B∆7C∞¢&ófFR7FFñ2fˆ∆Fñ∆R7G&ñÊr∆7DW'&˜"“""¬∆7D∆ˆvvVB“"#∞¢&ófFR7FFñ2fˆ∆Fñ∆R&ˆˆ∆V‚VÊFñÊr¬ÜˆÊUFW7E'VÊÊñÊr¬&ˆ˜FñÊr¬GW&ÊVDˆ‚¬7vóF6ÜñÊs∞¢&ófFR7FFñ2&ˆˆ∆V‚ñÊóFñ∆ó¶VC∞¢&ófFR7FFñ26ˆÊÊV7FófóGî÷ÊvW"‰ÊWGv˜&¥6∆∆&6≤vñfïvóC∞†¢&ófFRÜV«W$6ˆÁG&ˆ¬Çí∑–†¢ÚÚg&ˆ“Êˆ‰7&VFR‡¢7FFñ27ñÊ6á&ˆÊó¶VBfˆñBñÊóBÑ6ˆÁFWáB7GÇí∞¢ñbÜñÊóFñ∆ó¶VBí&WGW&„∞¢ñÊóFñ∆ó¶VB“G'VS∞¢6ˆÁFWáB2“7GÇÊvWD∆ñ6Fñˆ‰6ˆÁFWáBÇì∞¢áW6ÑÜV«W"ÊFD∆ó7FVÊW"Ü6ˆÊÊV7FVB”‚∞¢ñbÜ6ˆÊÊV7FVBíˆ‰6ˆÊÊV7FVBÜ2ì≤V«6Rˆ‰FñVBÜ2ì∞¢“ì∞¢ñbÑ'Vñ∆BÂdU%4îÙ‚Â4DµÙîÂB„“3í∞¢2ÊvWD6ˆÁFVÁE&W6ˆ«fW"ÇíÁ&Vvó7FW$6ˆÁFVÁDˆ'6W'fW"Ö6WGFñÊw2‰v∆ˆ&¬ÊvWEW&îf˜"ÑD%ıtîdíí¬f«6R¿¢ÊWr6ˆÁFVÁDˆ'6W'fW"Ü÷ñ‚í∞¢˜fW'&ñFRV&∆ñ2fˆñBˆ‰6ÜÊvRÜ&ˆˆ∆V‚6V∆bí∞¢ÚÚFÜRW6W"Ü˜"áW6ÇíGW&ÊVBvó&V∆W72FV'VvvñÊrˆ„¢7F'BFÜRÜV«W"‚¢ÚÚ'VÊÊñÊrÜV«W"÷í&RÜÊFñÊróG2&ñÊFW"˜fW"vñ‚&ñváBÊ˜rÑáW6Çw0¢ÚÚ&ˆ6W72v2&W7F'FVBí¬6Ú∆ˆˆ≤vñ‚gFW"÷ˆ÷VÁB‡¢÷ñ‚Á˜7DFV∆ñVBÇÇí”‚∞¢ñbÜFV'VvvñÊtˆ‚Ü2íbbvÁFVBÜ2íbbáW6ÑÜV«W"Á&VGíÇíbbÜˆÊUFW7E'VÊÊñÊrê¢VÁ7W&RÜ2¬f«6R¬f«6Rì∞¢“¬#Sì∞¢–¢“ì∞¢ÚÚÜV«W"FÜB˜WF∆ófVBáW6Çw2&ˆ6W72ÜÊG2óG2&ñÊFW"˜fW"vóFÜñ‚&˜WB6V6ˆÊC≤ñ`¢ÚÚÊˆÊR6÷RÜgFW"&V&ˆ˜B¬˜"óBFñVB÷VÁvÜñ∆Rí¬7BÊ˜r2gFW"&ˆ˜B‚ÊG&ˆñ@¢ÚÚ7F'G2áW6Çw2&ˆ6W72&ñváBgFW"FÜRVÊ∆ˆ6≤áFÚ&ñÊBFÜRBvF6ÜW"í¬'WBFV∆ófW'0¢ÚÚ$ÙıEÙ4Ù’ƒUDTBFÚóBˆÊ«ígFW"÷Áí˜FÜW"3¢WFÚ„b2∆FW"‡¢ÚÚgFW"&V&ˆ˜BÊÚÜV«W"6‚ÜfR7W'fófVB¬6ÚFÜW&Ró2Ê˜FÜñÊrFÚvóBf˜"‡¢÷ñ‚Á˜7DFV∆ñVBÇÇí”‚ˆ‰&ˆ˜BÜ2í¬ÊWr&Vg2Ü2íÊÜV«W$&ˆ˜BÇí”“&ˆ˜D6˜VÁBÜ2íÚ3¢ì∞¢–¢–†¢7FFñ2&ˆˆ∆V‚7W˜'FVBÇí≤&WGW&‚'Vñ∆BÂdU%4îÙ‚Â4DµÙîÂB„“3≤–†¢ÚÚ6∂óñÊr6Ü˜V∆B'V‚Fá&˜VvÇáW6Çw2ÜV«W"‡¢7FFñ2&ˆˆ∆V‚vÁFVBÑ6ˆÁFWáB2í∞¢&Vg2“ÊWr&Vg2Ü2ì∞¢&WGW&‚7W˜'FVBÇíbbÊVÊ&∆VBÇíbb&Vg2‰‘ÙDUı$U5D%BÊWV«2áÊ÷ˆFRÇííbbáÁó&VBÇí«¬Á&ˆ˜BÇíì∞¢–†¢7FFñ2&W7V«B∆7E&W7V«BÇí≤&WGW&‚∆7C≤–†¢ÚÚ““““vó&V∆W72FV'VvvñÊr6WGFñÊr“““–†¢7FFñ2&ˆˆ∆V‚FV'VvvñÊtˆ‚Ñ6ˆÁFWáB2í∞¢&WGW&‚6WGFñÊw2‰v∆ˆ&¬ÊvWDñÁBÜ2ÊvWD6ˆÁFVÁE&W6ˆ«fW"Çí¬D%ıtîdí¬í”“∞¢–†¢ÚÚáW6Ç÷í7vóF6Çvó&V∆W72FV'VvvñÊróG6V∆bÑÊG&ˆñB2≤¬gFW"FÜRÜV«W"w&ÁFVBFÜRW&÷ó76ñˆ‚í‡¢7FFñ2&ˆˆ∆V‚6ÂFˆvv∆TFV'VvvñÊrÑ6ˆÁFWáB2í∞¢&WGW&‚'Vñ∆BÂdU%4îÙ‚Â4DµÙîÂB„“30¢bb2Ê6ÜV6µ6V∆eW&÷ó76ñˆ‚Ñ÷ÊñfW7BÁW&÷ó76ñˆ‚Âu$ïDUı4T5U$Uı4UEDî‰u2í”“6∂vT÷ÊvW"ÂU$‘ï54îÙÂÙu$ÂDTC∞¢–†¢7FFñ2&ˆˆ∆V‚6WDFV'VvvñÊrÑ6ˆÁFWáB2¬&ˆˆ∆V‚ˆ‚í∞¢ñbÇ6ÂFˆvv∆TFV'VvvñÊrÜ2íí&WGW&‚f«6S∞¢ñbÑ'Vñ∆D6ˆÊfñr‰DT%Trí∆ˆrÊBÑáW6ÇÂDr¬'vó&V∆W72FV'VvvñÊr”‚"≤ˆ‚¬ÊWrFá&˜v&∆RÇíì∞¢G'í∞¢&WGW&‚6WGFñÊw2‰v∆ˆ&¬ÁWDñÁBÜ2ÊvWD6ˆÁFVÁE&W6ˆ«fW"Çí¬D%ıtîdí¬ˆ‚Ú¢ì∞¢“6F6ÇÖ6V7W&óGîWÜ6WFû∫◊€hëÈÏ∂ªßq´^t»Hô\›[]€òŸKà‹[ô»›]àÀ»õ‹ôŸ]»Hô\›[€»›⁄]⁄[ô»]Ÿôà[ô€àYÿZ[à\»›»H\Ÿ\à\⁄‹»õ‹àHô]»\›
+\⁄àÀ»ô]ô\àôK]\›»ûH]Ÿ[äKÇà›]X»õ⁄Y]]‘ô\›\ù⁄[ôŸY
+€€ù^›õ€€X[à€äH¬à€€ù^»H›ôŸ]\Xÿ][€ê€€ù^
 
-import android.Manifest;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.database.ContentObserver;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
-import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.SystemClock;
-import android.provider.Settings;
-import android.util.Log;
-import io.coldmew.hush.adb.AdbConnection;
-import io.coldmew.hush.adb.AdbKey;
-import io.coldmew.hush.adb.AdbMdns;
-import io.coldmew.hush.helper.Commands;
-import io.coldmew.hush.helper.HushHelper;
-import java.util.ArrayDeque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+N¬àôYú»Hô]»ôYú  N¬àò]]‘ô\›\ù
+€äN¬àYà
+[€äHú€ôU\›
+ôYúÀïT’”ì”ëJN¬àYà
+[€àR\⁄[\ãúôXYJ
+JHô]\õé¬àYà
+ôYúÀïT’”ì”ëKô\]X[ ú€ôU\›
 
-// Keeps Hush's own helper running, so skipping works with Hush as the only app.
-//  - start(): finds Wireless debugging's port on this phone (mDNS), connects with Hush's paired
-//    key, starts the helper and waits for it to hand over its Binder.
-//  - Self-healing: if the helper dies, it is started again (at most 3 times in 10 minutes); if that
-//    is not possible, skipping falls back to Mute and one "tap to fix" notification is shown.
-//  - Turning Wireless debugging on (by the user) starts the helper by itself.
-//  - After a reboot (Android turns Wireless debugging off): one "Tap to resume" notification, or,
-//    if the user opted in, an automatic restart followed by the per-phone test: Wireless debugging
-//    is switched off again and kept off only if the helper survives that on this phone.
-//  - On a rooted phone the user may choose root instead (Root): the helper is then started with su,
-//    with no Wi-Fi or Wireless debugging involved; the same restart limits and notices apply.
-// Hush only ever changes the Wireless debugging setting (never USB debugging or Developer options),
-// and only with WRITE_SECURE_SETTINGS (granted once by the helper) on Android 13+.
-final class HelperControl {
-    enum Result { READY, UNSUPPORTED, NOT_PAIRED, NO_WIFI, DEBUGGING_OFF, FAILED }
+JJH€‹öŸ\ãô^X›]J
 
-    static final String ADB_WIFI = "adb_wifi_enabled";
-    static final String PAIR_NAME = "Hush";
-    private static final long WINDOW = 10 * 60_000L;
-    private static final int MAX_RESTARTS = 3;
+HOà€ôU\›
+ JN¬à[ŸHYà
+ôYúÀïT’‘–QëKô\]X[ ú€ôU\›
 
-    private static final ExecutorService worker = Executors.newSingleThreadExecutor(r -> new Thread(r, "hush-helper"));
-    private static final Handler main = new Handler(Looper.getMainLooper());
-    private static final ArrayDeque<Long> restarts = new ArrayDeque<>();
-    private static volatile Result last;
-    private static volatile String lastError = "", lastLogged = "";
-    private static volatile boolean pending, phoneTestRunning, booting, turnedOn, switching;
-    private static boolean initialized;
-    private static ConnectivityManager.NetworkCallback wifiWait;
+JJH€‹öŸ\ãô^X›]J
 
-    private HelperControl() {}
+HOàŸY\XùYŸ⁄[ô”Ÿôä JN¬àBÇàÀ»⁄KQöH\»òX⁄»Yù\àH[\à€›[õ››\ù⁄]›]]
+[ôõ⁄Y›\ù»⁄\ô[\‹»XùYŸ⁄[ô¬àÀ»€õH€à⁄KQöJNàûHYÿZ[ã\»Yù\àHõ€›Çàö]ò]H›]X»õ⁄Y€ï⁄YöPòX⁄ €€ù^ H¬àYà
+]ÿ[ùY
+ H\⁄[\ãúôXYJ
+JHô]\õé¬àôYú»Hô]»ôYú  N¬àYà
+ò]]‘ô\›\ù
 
-    // From App.onCreate.
-    static synchronized void init(Context ctx) {
-        if (initialized) return;
-        initialized = true;
-        Context c = ctx.getApplicationContext();
-        HushHelper.addListener(connected -> {
-            if (connected) onConnected(c); else onDied(c);
-        });
-        if (Build.VERSION.SDK_INT >= 30) {
-            c.getContentResolver().registerContentObserver(Settings.Global.getUriFor(ADB_WIFI), false,
-                    new ContentObserver(main) {
-                        @Override public void onChange(boolean self) {
-                            // The user (or Hush) turned Wireless debugging on: start the helper. A
-                            // running helper may be handing its Binder over again right now (Hush's
-                            // process was restarted), so look again after a moment.
-                            main.postDelayed(() -> {
-                                if (debuggingOn(c) && wanted(c) && !HushHelper.ready() && !phoneTestRunning)
-                                    ensure(c, false, false);
-                            }, 2500);
-                        }
-                    });
-            // A helper that outlived Hush's process hands its Binder over within about a second; if
-            // none came (after a reboot, or it died meanwhile), act now as after a boot. Android
-            // starts Hush's process right after the unlock (to bind the ad watcher), but delivers
-            // BOOT_COMPLETED to it only after many other apps: up to ~16 s later.
-            // After a reboot no helper can have survived, so there is nothing to wait for.
-            main.postDelayed(() -> onBoot(c), new Prefs(c).helperBoot() == bootCount(c) ? 3000 : 0);
-        }
-    }
+H	âàÿ[ïŸŸ€QXùYŸ⁄[ô  JH»]]‘›\ù
+ N»Bà[ŸH¬àﬁ\›[P€ÿ⁄Àú€Y\
+Ã
+N»À»⁄\ô[\‹»XùYŸ⁄[ôÀYà€ãôYY»H[€Y[ù€àHô]»ô]€‹ö¬àÀ»€€YH€ô\»
+X[€ZJH›⁄]⁄⁄\ô[\‹»XùYŸ⁄[ô»Ÿôà⁄[à⁄KQöHõ‹»[ôX]ôH]ŸôãÇàÀ»Yà]ÿ\»€à⁄[àH[\à\››\ùY
+H\Ÿ\â‹»Ÿ][ô K\⁄]»]òX⁄ÀÇàô\›[àH›\ù
+ÀôXùYŸ⁄[ô’ÿ\”€ä
+H	âàÿ[ïŸŸ€QXùYŸ⁄[ô  JN¬àYà
+àOHô\›[îëPQJHõ›YûT›‹Y
+ÀäN¬àBàYà
+\⁄[\ãúôXYJ
+JH]ô[ùÀòY
+À]ô[ùÀíSëìÀï⁄KQöH\»òX⁄Œà⁄⁄\[ô»ô\›[YYäN¬àBÇàö]ò]H›]X»ﬁ[ò⁄õ€ö^ôYõ⁄YÿZ]õ‹ï⁄YöJ€€ù^ H¬àYà
+⁄YöUÿZ]OHù[
+Hô]\õé¬à€€õôX›]ö]SX[òYŸ\à€HHÀôŸ]ﬁ\›[TŸ\ùöXŸJ€€õôX›]ö]SX[òYŸ\ãò€\‹ N¬à⁄YöUÿZ]Hô]»€€õôX›]ö]SX[òYŸ\ãìô]€‹ö–ÿ[òX⁄ 
+H¬à›ô\úöYHXõX»õ⁄Y€ê]òZ[XõJô]€‹ö»äH¬àﬁ[ò⁄õ€ö^ôY
+[\ê€€ùõ€ò€\‹ H¬àYà
+⁄YöUÿZ]OHù[
+Hô]\õé¬àûH»€Kù[úôY⁄\›\ìô]€‹ö–ÿ[òX⁄ \ N»Hÿ]⁄
+ù[ù[YQ^Ÿ\[€àY€õ‹ôY
+HﬂBà⁄YöUÿZ]Hù[¬àBà€‹öŸ\ãô^X›]J
 
-    static boolean supported() { return Build.VERSION.SDK_INT >= 30; }
+HOà€ï⁄YöPòX⁄  JN¬àBàN¬àûH¬à€KúôY⁄\›\ìô]€‹ö–ÿ[òX⁄ ô]»ô]€‹ö‘ô\]Y\›êùZ[\ä
+KòYò[ú‹‹ù\Jô]€‹ö–ÿ\Xö[]Y\ÀïêSî‘‘ï’“QíJKòùZ[
 
-    // Skipping should run through Hush's helper.
-    static boolean wanted(Context c) {
-        Prefs p = new Prefs(c);
-        return supported() && p.enabled() && Prefs.MODE_RESTART.equals(p.mode()) && (p.paired() || p.root());
-    }
+K⁄YöUÿZ]
+N¬àHÿ]⁄
+ù[ù[YQ^Ÿ\[€àJH¬à⁄YöUÿZ]Hù[¬àBàBÇàÀ»KKKHõ›XŸHKKKBÇàÀ»€ôHõ›YöXÿ][€à⁄[à⁄⁄\[ô»ÿ[õõ›ù[àõ›Y⁄H[\ãàH\ô\›[Y\Œà]\õú¬àÀ»⁄\ô[\‹»XùYŸ⁄[ô»€àYà\⁄X^K‹à‹[ú»HŸ]\ÿ‹ôY[ãÇà›]X»õ⁄Yõ›YûT›‹Y
+€€ù^Àô\›[äH¬àYà
+àOHù[àOHô\›[îëPQJHô]\õé¬àYà
+]ÿ[ùY
+ H	âààOHô\›[ìì’‘RTëQ
+Hô]\õé¬à[ù^¬àõ€€X[à\ô\›[Y\»Hò[ŸN¬à›⁄]⁄
+äH¬àÿ\ŸHì’‘RTëQà^Hãú›ö[ôÀö[\ó€õ›XŸW‹Z\é»úôXZŒ¬àÿ\ŸHì◊’“QíNà^Hãú›ö[ôÀö[\ó€õ›XŸW›⁄YöN»ÿZ]õ‹ï⁄YöJ N»úôXZŒ¬àÿ\ŸHPïQ—“Së◊”—ëéÇà\ô\›[Y\»Hÿ[ïŸŸ€QXùYŸ⁄[ô  N¬à^H\ô\›[Y\»»ãú›ö[ôÀö[\ó€õ›XŸW‹ô\›[YHàãú›ö[ôÀö[\ó€õ›XŸWŸXùYŸ⁄[ôŒ¬àúôXZŒ¬àYò][à^Hô]»ôYú  Kúõ€›
 
-    static Result lastResult() { return last; }
+H»ãú›ö[ôÀö[\ó€õ›XŸW‹õ€›àãú›ö[ôÀö[\ó€õ›XŸWŸö^»úôXZŒ¬àBà[ô[ô“[ù[ù\H\ô\›[Y\¬à»[ô[ô“[ù[ùôŸ]úõÿYÿ\›
+Àô]»[ù[ù
+À\⁄îôXŸZ]ô\ãò€\‹ KúŸ]X›[€ä\⁄êP’S”ó‘ëT’SQJK[ô[ô“[ù[ùëìQ◊“SSUUPìJBàà[ô[ô“[ù[ùôŸ]X›]ö]JÀKô]»[ù[ù
+À[\îŸ]\X›]ö]Kò€\‹ K[ô[ô“[ù[ùëìQ◊“SSUUPìJN¬à›ö[ô»õŸHHÀôŸ]›ö[ô ^
+N¬àÀôŸ]ﬁ\›[TŸ\ùöXŸJõ›YöXÿ][€ìX[òYŸ\ãò€\‹ Kõõ›YûJ\⁄ìì’Qó“STãô]»õ›YöXÿ][€ãêùZ[\äÀ\⁄ê“–STï
+BàúŸ]€X[X€€äãôò]ÿXõKöX◊‹›]⁄\⁄
+KúŸ]€€‹äÀôŸ]€€‹äãò€€‹ãòXÿŸ[ù
+JBàúŸ]€€ù[ù]JÀôŸ]›ö[ô ãú›ö[ôÀö[\ó€õ›XŸW›]JJBàúŸ]€€ù[ù^
+õŸJBàúŸ]›[Jô]»õ›YöXÿ][€ãêöY’^›[J
+KòöY’^
+õŸJJBàúŸ]€€ù[ù[ù[ù
+\
+KúŸ]]]–ÿ[òŸ[
+ùYJKúŸ]€õP[\ù€òŸJùYJKòùZ[
 
-    // ---- Wireless debugging setting ----
+JN¬àBÇà›]X»õ⁄Yÿ[òŸ[õ›XŸJ€€ù^ H¬àÀôŸ]ﬁ\›[TŸ\ùöXŸJõ›YöXÿ][€ìX[òYŸ\ãò€\‹ Kòÿ[òŸ[
+\⁄ìì’Qó“STäN¬àBÇàÀ»Hõ›YöXÿ][€à\àô\›[YH[àHòX⁄Ÿ‹õ›[ôõ›YûHYÿZ[à€õHYà]Yõ›€‹öÀÇà›]X»õ⁄Yô\›[YQúõ€Sõ›XŸJ€€ù^›ù[õòXõH€ôJH¬à€€ù^»H›ôŸ]\Xÿ][€ê€€ù^
 
-    static boolean debuggingOn(Context c) {
-        return Settings.Global.getInt(c.getContentResolver(), ADB_WIFI, 0) == 1;
-    }
+N¬à€‹öŸ\ãô^X›]J
 
-    // Hush may switch Wireless debugging itself (Android 13+, after the helper granted the permission).
-    static boolean canToggleDebugging(Context c) {
-        return Build.VERSION.SDK_INT >= 33
-                && c.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED;
-    }
+HOà¬àûH¬àô\›[àH›\ù
+ÀùYJN¬àYà
+àOHô\›[îëPQJH¬àôYú»Hô]»ôYú  N¬àYà
+ò]]‘ô\›\ù
 
-    static boolean setDebugging(Context c, boolean on) {
-        if (!canToggleDebugging(c)) return false;
-        if (BuildConfig.DEBUG) Log.d(Hush.TAG, "wireless debugging -> " + on, new Throwable());
-        try {
-            return Settings.Global.putInt(c.getContentResolver(), ADB_WIFI, on ? 1 : 0);
-        } catch (SecurityException e) {
-            return false;
-        }
-    }
+H	âàôYúÀïT’‘–QëKô\]X[ ú€ôU\›
 
-    // Turns Wireless debugging off and keeps it off for a few seconds: right after a reboot Android
-    // can switch it on again by itself (seen on a recent Android version about 20 s after boot), shortly after
-    // Hush switched it off. At most three corrections, so Hush never fights the system for long.
-    // Never while USB debugging is off: with both off Android stops its debugging service and the
-    // helper with it. So USB debugging is turned on first (Skip only); if it stays off, Wireless
-    // debugging stays on.
-    static void keepDebuggingOff(Context c) {
-        if (!keepRunningOffWifi(c)) { Log.i(Hush.TAG, "USB debugging is off: leaving Wireless debugging on"); return; }
-        setDebugging(c, false);
-        for (int i = 0; i < 3; i++) {
-            SystemClock.sleep(2000);
-            if (!debuggingOn(c)) continue;
-            Log.i(Hush.TAG, "Wireless debugging was switched on again; switching it off");
-            setDebugging(c, false);
-        }
-    }
+JJHŸY\XùYŸ⁄[ô”Ÿôä N¬àH[ŸHõ›YûT›‹Y
+ÀäN¬àHö[ò[H¬à€ôKúù[ä
+N¬àBàJN¬àBÇàÀ»õ‹àHXY€õ‹›X‹»ô\‹ùàõ›[ô»\ú€€ò[€õH⁄][»»ö^Hõÿõ[KÇà›]X»›ö[ô»XY€õ‹›X‹ €€ù^ H¬àôYú»Hô]»ôYú  N¬à[ù◊H[ô»H\⁄[\ãú[ô 
+N¬àô]\õàòòX⁄Ÿ[ôàà
+»
+\⁄[\ãúôXYJ
+H»îö]⁄[\ààà
+»
+[ô»OHù[»è»àà[ô÷ÃJH
+»
+úõ€›
 
-    static boolean onWifi(Context c) {
-        ConnectivityManager cm = c.getSystemService(ConnectivityManager.class);
-        if (cm == null) return false;
-        for (Network n : cm.getAllNetworks()) {   // Wi-Fi may be up while mobile data is the default
-            NetworkCapabilities x = cm.getNetworkCapabilities(n);
-            if (x != null && x.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return true;
-        }
-        return false;
-    }
+H»à
+õ€›
+HàààäBàà⁄[ú⁄^ùZ›TôXYJ
+H»ú⁄^ùZ›Hààõõ€ôHäBà
+»óúõ€›àà
+»
+úõ€›
 
-    // ---- starting ----
+H»ù\ŸYààõ€›ò]òZ[XõJ H»ò]òZ[XõKõ›\ŸYààõõ»äBà
+»óúZ\ôYàà
+»úZ\ôY
 
-    // Blocking (never on the main thread). mayEnable: Hush may turn Wireless debugging on first.
-    static synchronized Result start(Context ctx, boolean mayEnable) {
-        Context c = ctx.getApplicationContext();
-        Result r = startLocked(c, mayEnable);
-        last = r;
-        Log.i(Hush.TAG, "helper start: " + r + (r == Result.READY ? "" : " " + lastError));
-        // A failed start is shown in the activity log (once per reason), for the user and bug reports.
-        String failure = r == Result.READY || r == Result.UNSUPPORTED ? "" : lastError;
-        if (!failure.isEmpty() && !failure.equals(lastLogged)) Events.add(c, Events.INFO, "Skipping helper didn't start: " + failure
-                + (r == Result.NO_WIFI ? " (it starts only on Wi-Fi; ads are muted until Wi-Fi is back)" : ""));
-        lastLogged = failure;
-        return r;
-    }
+Bà
+»óò]]»ô\›\ùàà
+»ò]]‘ô\›\ù
 
-    private static Result startLocked(Context c, boolean mayEnable) {
-        if (HushHelper.ready()) return Result.READY;
-        if (!supported()) return Result.UNSUPPORTED;
-        if (new Prefs(c).root()) {   // needs neither Wi-Fi nor Wireless debugging
-            String why = Root.startHelper(c);
-            lastError = why == null ? "" : why;
-            return why == null ? Result.READY : Result.FAILED;
-        }
-        if (!onWifi(c)) { lastError = "no Wi-Fi"; return Result.NO_WIFI; }
-        boolean wasOn = debuggingOn(c);
-        if (!wasOn && !(mayEnable && setDebugging(c, true))) { lastError = "Wireless debugging is off"; return Result.DEBUGGING_OFF; }
-        turnedOn = !wasOn;
-        int port = AdbMdns.find(c, AdbMdns.TLS_CONNECT, wasOn ? 4000 : 10000);
-        // Just switched on, Wireless debugging can take longer than 10 s to announce its port (seen
-        // on Xiaomi): one more look before calling the start failed.
-        if (port <= 0 && !wasOn && debuggingOn(c)) port = AdbMdns.find(c, AdbMdns.TLS_CONNECT, 10000);
-        if (port <= 0) {
-            lastError = "Wireless debugging port not found";
-            return debuggingOn(c) ? Result.FAILED : Result.DEBUGGING_OFF;
-        }
-        // The connection stays open until the helper has handed over its Binder: closing it right
-        // after the start command can end the helper before it has detached from the session.
-        for (int attempt = 1; ; attempt++) {
-            try (AdbConnection adb = AdbConnection.open(AdbKey.get(c), "127.0.0.1", port)) {
-                adb.shell(HushHelper.startCommand(c));
-                long end = SystemClock.elapsedRealtime() + 8000;
-                while (!HushHelper.ready() && SystemClock.elapsedRealtime() < end) SystemClock.sleep(50);
-                break;
-            } catch (AdbConnection.NotPairedException e) {
-                // Right after Wireless debugging is switched on, adbd can drop the first connections
-                // while it starts up, and the port found first can be the one from before. Marking
-                // the pairing as lost sends the user through pairing again (issue #12), so it takes
-                // three refusals over about 5 s, with the port looked up again each time.
-                if (attempt < 3) {
-                    SystemClock.sleep(1500L * attempt);
-                    int again = AdbMdns.find(c, AdbMdns.TLS_CONNECT, 3000);
-                    if (again > 0) port = again;
-                    continue;
-                }
-                new Prefs(c).paired(false);
-                lastError = "not paired";
-                return Result.NOT_PAIRED;
-            } catch (Exception e) {
-                lastError = e.getClass().getSimpleName() + ": " + e.getMessage();
-                return Result.FAILED;
-            }
-        }
-        if (!HushHelper.ready()) { lastError = "helper did not connect"; return Result.FAILED; }
-        new Prefs(c).paired(true);
-        // The user's own setting at this start (not one Hush switched on just for it).
-        if (!turnedOn) new Prefs(c).debuggingWasOn(true);
-        else if (!new Prefs(c).autoRestart()) new Prefs(c).debuggingWasOn(true);
-        lastError = "";
-        return Result.READY;
-    }
+H
+»à
+ÿ[à›⁄]⁄XùYŸ⁄[ôŒàà
+»ÿ[ïŸŸ€QXùYŸ⁄[ô  H
+»äHÇà
+»óú\ã\€ôH\›àà
+»
+ú€ôU\›
 
-    // "Use root" on the setup screen: start the helper with root, replacing one started over Wireless
-    // debugging. Hush keeps using root only if that worked; otherwise skipping goes on as before.
-    static void useRootAsync(Context ctx, java.util.function.Consumer<Boolean> done) {
-        Context c = ctx.getApplicationContext();
-        worker.execute(() -> {
-            String why;
-            switching = true;
-            try {
-                if (HushHelper.ready()) {
-                    HushHelper.stop();
-                    for (int i = 0; i < 40 && HushHelper.ready(); i++) SystemClock.sleep(50);
-                }
-                why = Root.startHelper(c);
-            } finally {
-                switching = false;
-            }
-            last = why == null ? Result.READY : Result.FAILED;
-            lastError = why == null ? "" : why;
-            if (why == null) {
-                new Prefs(c).root(true);
-                cancelNotice(c);
-                Events.add(c, Events.INFO, "Skipping now starts with root: no Wireless debugging needed");
-            } else {
-                Events.add(c, Events.INFO, "Skipping helper didn't start with root: " + why);
-                if (!HushHelper.ready() && wanted(c)) start(c, true);   // back to Wireless debugging
-            }
-            main.post(() -> done.accept(why == null));
-        });
-    }
+Kö\—[\J
+H»õõ›ù[àààú€ôU\›
 
-    // Issue #13: Hush 2.0.6 and older, when turned off, left Spotify's background-audio ops in a mode
-    // Android treats as denied, so Spotify stayed silent until Hush was turned on again. With Hush
-    // off its helper is not started, so nothing would undo that. Once, with Hush off and the phone
-    // set up (paired or root), Hush starts its helper quietly to put them right. Wireless debugging
-    // is switched on for this only where Hush may switch it (as after an in-app update), and
-    // switched off again right after. Without Wi-Fi, or if the start fails, it tries again the next
-    // time Hush starts. When Hush is on, turning it on already allows them.
-    private static void repairAudioOnce(Context c) {
-        Prefs p = new Prefs(c);
-        if (p.enabled() || p.audioRepaired() || !supported() || !(p.paired() || p.root()) || booting) return;
-        worker.execute(() -> {
-            if (new Prefs(c).enabled() || new Prefs(c).audioRepaired()) return;
-            boolean wasOn = debuggingOn(c);
-            if (!HushHelper.ready()) {
-                Result r;
-                boolean userHadItOn = new Prefs(c).debuggingWasOn();   // this start is not the user's choice
-                synchronized (HelperControl.class) { r = startLocked(c, canToggleDebugging(c)); }   // quiet: no failure event
-                new Prefs(c).debuggingWasOn(userHadItOn);
-                if (r != Result.READY) {
-                    if (!wasOn && debuggingOn(c)) setDebugging(c, false);
-                    return;
-                }
-            }
-            // Playing right now: audible at once, and Android's default once Spotify stops (as when
-            // Hush is turned off). Otherwise Android's default now.
-            if (AdWatcher.spotifyPlaying()) { Shell.run(Commands.ALLOW_AUDIO); BackgroundAudio.resetWhenIdle(); }
-            else Shell.run(Commands.RESET_AUDIO);
-            new Prefs(c).audioRepaired(true);
-            Events.add(c, Events.INFO, "Spotify's audio settings were put back to normal");
-            // Leave Wireless debugging as the user had it (Hush is off: its helper is not needed).
-            if (!wasOn && debuggingOn(c)) setDebugging(c, false);
-        });
-    }
+JBà
+»óù⁄\ô[\‹»XùYŸ⁄[ôŒàà
+»
+XùYŸ⁄[ô”€ä H»õ€àààõŸôàäBà
+»óú‹›YûH[àòX⁄Ÿ‹õ›[ôàà
+»
+‹›YûPòX⁄Ÿ‹õ›[ôúô\›öX›Y
 
-    // Starts the helper in the background unless a start is already queued.
-    static void ensure(Context ctx, boolean mayEnable, boolean notifyOnFailure) {
-        Context c = ctx.getApplicationContext();
-        if (pending) return;
-        pending = true;
-        worker.execute(() -> {
-            pending = false;
-            turnedOn = false;
-            Result r = start(c, mayEnable);
-            if (r != Result.READY && notifyOnFailure) notifyStopped(c, r);
-            // Hush switched Wireless debugging on just for this start: switch it off again where the
-            // phone passed the test (never when the user turned it on).
-            Prefs p = new Prefs(c);
-            if (r == Result.READY && turnedOn && p.autoRestart() && Prefs.TEST_SAFE.equals(p.phoneTest())) keepDebuggingOff(c);
-        });
-    }
-
-    // ---- events ----
-
-    static int bootCount(Context c) {
-        return Settings.Global.getInt(c.getContentResolver(), Settings.Global.BOOT_COUNT, -1);
-    }
-
-    private static void onConnected(Context c) {
-        cancelNotice(c);
-        new Prefs(c).helperBoot(bootCount(c));
-        worker.execute(() -> {
-            // Background audio for the new backend, and the permission that lets Hush switch
-            // Wireless debugging itself later (granted only to Hush, once).
-            BackgroundAudio.apply(c);
-            if (Build.VERSION.SDK_INT >= 33 && !canToggleDebugging(c)) Shell.run(Commands.GRANT_SECURE_SETTINGS, c.getPackageName());
-            keepRunningOffWifi(c);
-            // Spotify left muted (e.g. Hush was stopped mid-ad in the car, or the phone restarted):
-            // undo it now that Hush can, unless an ad is playing right now.
-            if (!AdWatcher.inBreak()) Hush.unmuteIfNeeded(c);
-            Prefs p = new Prefs(c);
-            if (p.checkCopies() && p.copiesChecked() != BuildConfig.VERSION_CODE) {
-                p.copiesChecked(BuildConfig.VERSION_CODE);
-                UpdateCopies.removeIfAny(c);
-            }
-            p.checkCopies(false);
-            SpotifyBackground.ensureAllowed(c);   // before the first skip, not after it
-            Xiaomi.allowAutostart(c);
-            AdWatcher.ensureConnected(c);
-        });
-    }
-
-    // Android switches Wireless debugging off when Wi-Fi drops. With USB debugging off too, Android
-    // then stops its debugging service and every process it started, Hush's helper included, and
-    // the helper can only be started again on Wi-Fi: on mobile data ads would be muted. So while
-    // the user has chosen Skip, Hush turns USB debugging on (once; it stays on) and says so in
-    // Recent activity.
-    static void keepRunningOffWifiAsync(Context ctx) {
-        Context c = ctx.getApplicationContext();
-        worker.execute(() -> keepRunningOffWifi(c));
-    }
-
-    // Returns true if USB debugging is on (it was, or Hush turned it on), i.e. the helper survives
-    // Wireless debugging going off.
-    static boolean keepRunningOffWifi(Context c) {
-        if (!Shell.ready() || new Prefs(c).root()) return false;   // a helper started with root needs no debugging
-        String state = Shell.run(Commands.USB_DEBUGGING_STATE).trim();
-        if (!"0".equals(state)) return "1".equals(state);
-        Prefs p = new Prefs(c);
-        if (!p.enabled() || !Prefs.MODE_RESTART.equals(p.mode())) return false;
-        // Hush's own permission first (the one it switches Wireless debugging with): Xiaomi refuses
-        // the helper's command unless "USB debugging (Security settings)" is on, but keeps letting
-        // Hush use a permission granted while it was on (measured on HyperOS 2).
-        if (canToggleDebugging(c)) {
-            try { Settings.Global.putInt(c.getContentResolver(), Settings.Global.ADB_ENABLED, 1); }
-            catch (SecurityException ignored) {}
-        }
-        if (!"1".equals(Shell.run(Commands.USB_DEBUGGING_STATE).trim())) Shell.run(Commands.USB_DEBUGGING_ON);
-        if (!"1".equals(Shell.run(Commands.USB_DEBUGGING_STATE).trim())) return false;
-        Events.add(c, Events.INFO, "Turned on USB debugging, so skipping keeps working when Wi-Fi is off");
-        return true;
-    }
-
-    private static void onDied(Context c) {
-        if (!wanted(c) || phoneTestRunning || switching) return;
-        long now = SystemClock.elapsedRealtime();
-        Prefs p = new Prefs(c);
-        synchronized (restarts) {
-            while (!restarts.isEmpty() && now - restarts.peekFirst() > WINDOW) restarts.pollFirst();
-            if (restarts.size() >= MAX_RESTARTS) {
-                if (Prefs.TEST_SAFE.equals(p.phoneTest()) && !debuggingOn(c) && !p.root()) {
-                    // The phone passed the test once but now keeps stopping the helper while
-                    // Wireless debugging is off (e.g. after a system update): leave it on from now on.
-                    p.phoneTest(Prefs.TEST_NEEDS_ON);
-                    Events.add(c, Events.INFO, "This phone now needs Wireless debugging on to keep skipping ready");
-                    restarts.clear();
-                } else {
-                    Events.add(c, Events.FAIL, "Skipping helper keeps stopping; ads are muted until it is fixed");
-                    notifyStopped(c, Result.FAILED);
-                    return;
-                }
-            }
-            restarts.addLast(now);
-        }
-        boolean auto = p.autoRestart() && canToggleDebugging(c) && !p.root();
-        worker.execute(() -> {
-            SystemClock.sleep(1000);
-            Result r = start(c, auto);
-            if (r == Result.READY) {
-                Events.add(c, Events.INFO, "Skipping helper restarted");
-                if (auto && Prefs.TEST_SAFE.equals(p.phoneTest())) keepDebuggingOff(c);
-            } else {
-                notifyStopped(c, r);
-            }
-        });
-    }
-
-    // Hush's process starts after a reboot, or after an update (which also ends the old helper).
-    // Called both when the process starts (init) and on BOOT_COMPLETED; the second call finds the
-    // helper ready (or a start already running) and does nothing.
-    static void onBoot(Context ctx) {
-        Context c = ctx.getApplicationContext();
-        Prefs up = new Prefs(c);
-        if (up.updating() && up.copiesChecked() != BuildConfig.VERSION_CODE) up.checkCopies(true);   // see UpdateCopies
-        repairAudioOnce(c);
-        if (!wanted(c) || HushHelper.ready() || booting) return;
-        Prefs p = new Prefs(c);
-        if (p.root()) {   // root: start at once, there is nothing to wait for
-            p.updating(false);
-            booting = true;
-            worker.execute(() -> {
-                try {
-                    Result r = start(c, false);
-                    if (r != Result.READY) notifyStopped(c, r);
-                } finally { booting = false; }
-            });
-            return;
-        }
-        if (p.updating() && canToggleDebugging(c) && onWifi(c)) {
-            // Hush just updated itself (the user tapped Update): bring skipping back the same way as
-            // the automatic restart, and leave Wireless debugging as it was before.
-            p.updating(false);
-            boolean wasOn = debuggingOn(c);
-            booting = true;
-            worker.execute(() -> {
-                try {
-                    Result r = start(c, true);
-                    if (r != Result.READY) notifyStopped(c, r);
-                    else if (!wasOn) keepDebuggingOff(c);
-                } finally { booting = false; }
-            });
-            return;
-        }
-        p.updating(false);
-        // Without Wi-Fi the helper cannot start (Android runs Wireless debugging only on Wi-Fi), so
-        // that is the reason to give, not "Wireless debugging is off": tapping could not help then.
-        // Hush resumes by itself when Wi-Fi is back. Said in Recent activity too, as start() does.
-        if (!onWifi(c)) {
-            if (!"no Wi-Fi".equals(lastLogged))   // once per reason, as in start()
-                Events.add(c, Events.INFO, "Skipping helper didn't start: no Wi-Fi (it starts only on Wi-Fi; ads are muted until Wi-Fi is back)");
-            lastLogged = "no Wi-Fi";
-            if (p.autoRestart() && canToggleDebugging(c)) waitForWifi(c);
-            else notifyStopped(c, Result.NO_WIFI);   // also waits for Wi-Fi
-        } else if (p.autoRestart() && canToggleDebugging(c)) {
-            booting = true;
-            worker.execute(() -> { try { autoStart(c); } finally { booting = false; } });
-        } else if (debuggingOn(c)) {
-            ensure(c, false, true);
-        } else {
-            if (!"Wireless debugging is off".equals(lastLogged))
-                Events.add(c, Events.INFO, "Skipping helper didn't start: Wireless debugging is off");
-            lastLogged = "Wireless debugging is off";
-            notifyStopped(c, Result.DEBUGGING_OFF);
-        }
-    }
-
-    // Opt-in automatic restart: turn Wireless debugging on, start, then apply the per-phone result.
-    private static void autoStart(Context c) {
-        Result r = start(c, true);
-        if (r != Result.READY) { notifyStopped(c, r); return; }
-        Prefs p = new Prefs(c);
-        String test = p.phoneTest();
-        if (Prefs.TEST_SAFE.equals(test)) keepDebuggingOff(c);
-        else if (Prefs.TEST_NONE.equals(test)) phoneTest(c);
-    }
-
-    // The per-phone test: does the helper keep running here with Wireless debugging off?
-    static void phoneTest(Context c) {
-        Prefs p = new Prefs(c);
-        if (!HushHelper.ready() || !canToggleDebugging(c)) return;
-        keepRunningOffWifi(c);   // with USB debugging on, the helper survives Wireless debugging going off
-        phoneTestRunning = true;
-        boolean alive = true;
-        try {
-            setDebugging(c, false);
-            for (int i = 0; i < 20 && alive; i++) {   // 10 s
-                SystemClock.sleep(500);
-                if (debuggingOn(c)) setDebugging(c, false);   // switched on again meanwhile (see keepDebuggingOff)
-                alive = HushHelper.ping() != null;
-            }
-        } finally {
-            phoneTestRunning = false;
-        }
-        if (alive) {
-            p.phoneTest(Prefs.TEST_SAFE);
-            Events.add(c, Events.INFO, "This phone keeps skipping ready with Wireless debugging off");
-        } else {
-            p.phoneTest(Prefs.TEST_NEEDS_ON);
-            Events.add(c, Events.INFO, "This phone needs Wireless debugging on to keep skipping ready");
-            Result r = start(c, true);
-            if (r != Result.READY) notifyStopped(c, r);
-        }
-    }
-
-    // Opting in from Settings: run the test now, so the user sees the result at once. Opting out
-    // forgets the result, so switching it off and on again is how a user asks for a new test (Hush
-    // never re-tests by itself).
-    static void autoRestartChanged(Context ctx, boolean on) {
-        Context c = ctx.getApplicationContext();
-        Prefs p = new Prefs(c);
-        p.autoRestart(on);
-        if (!on) p.phoneTest(Prefs.TEST_NONE);
-        if (!on || !HushHelper.ready()) return;
-        if (Prefs.TEST_NONE.equals(p.phoneTest())) worker.execute(() -> phoneTest(c));
-        else if (Prefs.TEST_SAFE.equals(p.phoneTest())) worker.execute(() -> keepDebuggingOff(c));
-    }
-
-    // Wi-Fi is back after the helper could not start without it (Android starts Wireless debugging
-    // only on Wi-Fi): try again, as after a boot.
-    private static void onWifiBack(Context c) {
-        if (!wanted(c) || HushHelper.ready()) return;
-        Prefs p = new Prefs(c);
-        if (p.autoRestart() && canToggleDebugging(c)) { autoStart(c); }
-        else {
-            SystemClock.sleep(3000);   // Wireless debugging, if on, needs a moment on the new network
-            // Some phones (Xiaomi) switch Wireless debugging off when Wi-Fi drops and leave it off.
-            // If it was on when the helper last started (the user's setting), Hush puts it back.
-            Result r = start(c, p.debuggingWasOn() && canToggleDebugging(c));
-            if (r != Result.READY) notifyStopped(c, r);
-        }
-        if (HushHelper.ready()) Events.add(c, Events.INFO, "Wi-Fi is back: skipping resumed");
-    }
-
-    private static synchronized void waitForWifi(Context c) {
-        if (wifiWait != null) return;
-        ConnectivityManager cm = c.getSystemService(ConnectivityManager.class);
-        wifiWait = new ConnectivityManager.NetworkCallback() {
-            @Override public void onAvailable(Network n) {
-                synchronized (HelperControl.class) {
-                    if (wifiWait == null) return;
-                    try { cm.unregisterNetworkCallback(this); } catch (RuntimeException ignored) {}
-                    wifiWait = null;
-                }
-                worker.execute(() -> onWifiBack(c));
-            }
-        };
-        try {
-            cm.registerNetworkCallback(new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build(), wifiWait);
-        } catch (RuntimeException e) {
-            wifiWait = null;
-        }
-    }
-
-    // ---- notice ----
-
-    // One notification when skipping cannot run through the helper. The tap resumes: it turns
-    // Wireless debugging on if Hush may, or opens the setup screen.
-    static void notifyStopped(Context c, Result r) {
-        if (r == null || r == Result.READY) return;
-        if (!wanted(c) && r != Result.NOT_PAIRED) return;
-        int text;
-        boolean tapResumes = false;
-        switch (r) {
-            case NOT_PAIRED: text = R.string.helper_notice_pair; break;
-            case NO_WIFI: text = R.string.helper_notice_wifi; waitForWifi(c); break;
-            case DEBUGGING_OFF:
-                tapResumes = canToggleDebugging(c);
-                text = tapResumes ? R.string.helper_notice_resume : R.string.helper_notice_debugging;
-                break;
-            default: text = new Prefs(c).root() ? R.string.helper_notice_root : R.string.helper_notice_fix; break;
-        }
-        PendingIntent tap = tapResumes
-                ? PendingIntent.getBroadcast(c, 4, new Intent(c, Hush.Receiver.class).setAction(Hush.ACTION_RESUME), PendingIntent.FLAG_IMMUTABLE)
-                : PendingIntent.getActivity(c, 5, new Intent(c, HelperSetupActivity.class), PendingIntent.FLAG_IMMUTABLE);
-        String body = c.getString(text);
-        c.getSystemService(NotificationManager.class).notify(Hush.NOTIF_HELPER, new Notification.Builder(c, Hush.CH_ALERT)
-                .setSmallIcon(R.drawable.ic_stat_hush).setColor(c.getColor(R.color.accent))
-                .setContentTitle(c.getString(R.string.helper_notice_title))
-                .setContentText(body)
-                .setStyle(new Notification.BigTextStyle().bigText(body))
-                .setContentIntent(tap).setAutoCancel(true).setOnlyAlertOnce(true).build());
-    }
-
-    static void cancelNotice(Context c) {
-        c.getSystemService(NotificationManager.class).cancel(Hush.NOTIF_HELPER);
-    }
-
-    // The notification tap: resume in the background, notify again only if it did not work.
-    static void resumeFromNotice(Context ctx, Runnable done) {
-        Context c = ctx.getApplicationContext();
-        worker.execute(() -> {
-            try {
-                Result r = start(c, true);
-                if (r == Result.READY) {
-                    Prefs p = new Prefs(c);
-                    if (p.autoRestart() && Prefs.TEST_SAFE.equals(p.phoneTest())) keepDebuggingOff(c);
-                } else notifyStopped(c, r);
-            } finally {
-                done.run();
-            }
-        });
-    }
-
-    // For the diagnostics report: nothing personal, only what helps to fix a problem.
-    static String diagnostics(Context c) {
-        Prefs p = new Prefs(c);
-        int[] ping = HushHelper.ping();
-        return "backend: " + (HushHelper.ready() ? "hush-helper v" + (ping == null ? "?" : ping[0]) + (p.root() ? " (root)" : "")
-                        : Shell.shizukuReady() ? "shizuku" : "none")
-                + "\nroot: " + (p.root() ? "used" : Root.available(c) ? "available, not used" : "no")
-                + "\npaired: " + p.paired()
-                + "\nauto restart: " + p.autoRestart() + " (can switch debugging: " + canToggleDebugging(c) + ")"
-                + "\nper-phone test: " + (p.phoneTest().isEmpty() ? "not run" : p.phoneTest())
-                + "\nwireless debugging: " + (debuggingOn(c) ? "on" : "off")
-                + "\nspotify in background: " + (SpotifyBackground.restricted() ? "restricted" : "allowed or unknown")
-                + "\nlast start: " + last + (lastError.isEmpty() ? "" : " (" + lastError + ")");
-    }
-}
+H»úô\›öX›Yààò[›ŸY‹à[ö€õ›€àäBà
+»óõ\››\ùàà
+»\›
+»
+\›\úõ‹ãö\—[\J
+H»àààà
+à
+»\›\úõ‹à
+»äHäN¬àBüB

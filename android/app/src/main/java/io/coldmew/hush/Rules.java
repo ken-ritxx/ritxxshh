@@ -26,7 +26,7 @@ final class Rules {
     // Measured on Spotify 9.1 (docs/HOW-IT-WORKS.md, section 3): block the video-ad CDNs, and answer the
     // Ad Studio host with a Spotify Akamai edge, which returns 403 instead of a connection error
     // (a plain block there freezes background playback).
-    static final String DEFAULTS = "# Hush DNS rules for Spotify\n"
+    static final String DEFAULTS = "# RitxxShh DNS rules for Spotify\n"
             + "block video-fa.scdn.co\n"
             + "block video-cf.spotifycdn.com\n"
             + "block s0.2mdn.net\n"

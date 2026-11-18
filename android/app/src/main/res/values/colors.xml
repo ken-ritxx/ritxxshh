@@ -15,6 +15,6 @@
     <color name="warn">#B06000</color>
     <color name="bad">#C5221F</color>
     <color name="neutral">#80868B</color>
-    <!-- brand colour of the Hush icon; the same in both themes -->
-    <color name="brand">#E26041</color>
+    <!-- RitxxShh launcher icon background -->
+    <color name="brand">#8E24AA</color>
 </resources>

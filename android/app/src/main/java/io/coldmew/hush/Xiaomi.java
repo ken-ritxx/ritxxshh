@@ -52,7 +52,7 @@ final class Xiaomi {
             if (allowed(Shell.run(Commands.MIUI_AUTOSTART, pkg))) changed = true;
         }
         if (!hushAllowed) sp.edit().putInt("xiaomi_autostart_boot", boot).apply();
-        if (changed) Events.add(c, Events.INFO, "Allowed Autostart for Hush and Spotify (Xiaomi), so Android can bring them back after its cleaner closes them");
+        if (changed) Events.add(c, Events.INFO, "Allowed Autostart for RitxxShh and Spotify (Xiaomi), so Android can bring them back after its cleaner closes them");
     }
 
     // Show the "Allow Autostart" setup row: Xiaomi dropped the Autostart Hush set for itself at a restart.

@@ -68,7 +68,7 @@ final class UpdateCopies {
         for (int user : fromUpdate(Shell.run(Commands.HUSH_USERS, c.getPackageName()), me)) {
             String out = Shell.run(Commands.REMOVE_HUSH_COPY, user + "/" + c.getPackageName());
             if (out.contains("Success"))
-                Events.add(c, Events.INFO, "Removed the extra copy of Hush that the last update added to an app-clone space");
+                Events.add(c, Events.INFO, "Removed the extra copy of RitxxShh that the last update added to an app-clone space");
         }
     }
 }

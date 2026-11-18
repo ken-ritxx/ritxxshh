@@ -25,7 +25,7 @@ final class Providers {
         }
         // Hush could not be reached (not running and not startable right now). An exception, so
         // that a null answer always means Hush itself refused (see Helper.waitForHush).
-        if (holder == null) throw new IllegalStateException("Hush's provider is not available");
+        if (holder == null) throw new IllegalStateException("RitxxShh's provider is not available");
         Object provider = holder.getClass().getField("provider").get(holder);
         try {
             return callProvider(provider, authority, method, extras);

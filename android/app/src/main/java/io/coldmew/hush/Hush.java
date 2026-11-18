@@ -1,255 +1,1 @@
-package io.coldmew.hush;
-
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.media.AudioManager;
-import android.net.VpnService;
-import android.os.Build;
-import android.provider.Settings;
-import android.service.notification.NotificationListenerService;
-
-// The master switch. Turning Hush on starts the DNS filter (if enabled) and arms the ad watcher;
-// turning it off stops the filter, disarms the watcher and restores any volume Hush muted.
-final class Hush {
-    static final String TAG = "Hush";
-    static final String SPOTIFY = "com.spotify.music";
-    static final String CH_STATUS = "status", CH_ALERT = "alert", CH_PAIR = "pair";
-    static final int NOTIF_STATUS = 1, NOTIF_ALERT = 2, NOTIF_SHIZUKU = 3, NOTIF_HELPER = 4;
-    static final String ACTION_OFF = "io.coldmew.hush.TURN_OFF", ACTION_RESUME = "io.coldmew.hush.RESUME";
-
-    private Hush() {}
-
-    static void setEnabled(Context c, boolean on) {
-        Prefs p = new Prefs(c);
-        p.enabled(on);
-        if (on) {
-            Events.add(c, Events.INFO, "Hush turned on");
-            applyDns(c);
-            BackgroundAudio.apply(c);
-            HelperControl.keepRunningOffWifiAsync(c);
-            try { NotificationListenerService.requestRebind(new ComponentName(c, AdWatcher.class)); } catch (Exception ignored) {}
-            AdWatcher.ensureConnected(c);   // requestRebind alone does not reconnect a dropped watcher
-        } else {
-            Events.add(c, Events.INFO, "Hush turned off");
-            stopVpn(c);
-            BackgroundAudio.resetWhenIdle();
-            unmuteIfNeeded(c);
-        }
-        refreshNotification(c);
-        AdWatcher.recheck();
-    }
-
-    // Starts or stops the VPN to match the settings. Returns false if VPN permission is missing.
-    static boolean applyDns(Context c) {
-        Prefs p = new Prefs(c);
-        if (!p.enabled() || !p.dns()) { stopVpn(c); return true; }
-        if (VpnService.prepare(c) != null) return false;
-        c.startForegroundService(new Intent(c, DnsVpnService.class));
-        return true;
-    }
-
-    static void stopVpn(Context c) {
-        if (DnsVpnService.running) c.startService(new Intent(c, DnsVpnService.class).setAction(DnsVpnService.ACTION_STOP));
-    }
-
-    // Muting Spotify itself runs a shell command, which takes a moment: done off the caller's
-    // thread, one at a time so a mute and the unmute after it never swap places.
-    private static final java.util.concurrent.ExecutorService SPOTIFY_AUDIO =
-            java.util.concurrent.Executors.newSingleThreadExecutor();
-
-    // Mutes an ad. Android Auto plays Spotify's audio itself, so the phone's music volume does not
-    // reach the car: there Spotify is muted directly (needs the helper or Shizuku). Elsewhere the
-    // music volume is muted, which works without any setup.
-    static void muteAd(Context c) {
-        Prefs p = new Prefs(c);
-        // Spotify plays on a speaker, TV or computer: the phone's volume does not reach it, but the
-        // session's remote volume does. Hush turns it to 0 and back when the ad is over.
-        android.media.session.MediaController remote = AdWatcher.remoteSpotify();
-        if (remote != null) {
-            int now = remote.getPlaybackInfo().getCurrentVolume();
-            if (p.castVolume() < 0 && now > 0) p.castVolume(now);
-            remote.setVolumeTo(0, 0);
-            return;
-        }
-        if (Shell.ready() && Car.connected(c)) {
-            p.mutedSpotify(true);
-            SPOTIFY_AUDIO.execute(() -> Shell.run(io.coldmew.hush.helper.Commands.MUTE_SPOTIFY));
-        } else {
-            unmuteGen++;   // a pending unmute check must not undo this mute
-            c.getSystemService(AudioManager.class).adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0);
-            p.mutedByUs(true);
-        }
-    }
-
-    // Silences Spotify alone (its PLAY_AUDIO app-op, through the helper); unmuteIfNeeded undoes it.
-    static void muteSpotify(Context c) {
-        new Prefs(c).mutedSpotify(true);
-        SPOTIFY_AUDIO.execute(() -> Shell.run(io.coldmew.hush.helper.Commands.MUTE_SPOTIFY));
-    }
-
-    static void unmuteIfNeeded(Context c) {
-        Prefs p = new Prefs(c);
-        restoreCastVolume(c);
-        if (p.mutedSpotify() && Shell.ready()) {   // without a backend it stays marked and is undone later
-            p.mutedSpotify(false);
-            SPOTIFY_AUDIO.execute(() -> Shell.run(io.coldmew.hush.helper.Commands.UNMUTE_SPOTIFY));
-        }
-        if (!p.mutedByUs()) return;
-        AudioManager am = c.getSystemService(AudioManager.class);
-        am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0);
-        // Hush must never leave the phone's music muted (it happened once in testing): "muted by Hush"
-        // is cleared only once the music is really back on. If the unmute did not take, Hush tries
-        // again, then the system-level way (its helper presses the mute key, only if still muted).
-        // If none of that is possible right now, the mark stays and Hush tries again as soon as its
-        // helper connects, at the next skip, or when the next muted ad ends.
-        int gen = ++unmuteGen;
-        Context app = c.getApplicationContext();
-        AUDIO_CHECK.postDelayed(() -> finishUnmute(app, am, gen, 0), 400);
-    }
-
-    private static final android.os.Handler AUDIO_CHECK = new android.os.Handler(android.os.Looper.getMainLooper());
-    // A newer mute or unmute replaces a pending check.
-    private static volatile int unmuteGen;
-
-    private static void finishUnmute(Context c, AudioManager am, int gen, int step) {
-        if (gen != unmuteGen) return;
-        Prefs p = new Prefs(c);
-        if (!am.isStreamMute(AudioManager.STREAM_MUSIC)) { p.mutedByUs(false); return; }
-        if (step == 0) am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0);
-        else if (step == 1 && Shell.ready()) SPOTIFY_AUDIO.execute(() -> Xiaomi.noteInput(Shell.run(io.coldmew.hush.helper.Commands.UNMUTE_MUSIC)));
-        else {
-            Events.add(c, Events.FAIL, "Music volume still muted after an ad: Hush tries again as soon as it can");
-            return;   // mark kept: retried when the helper connects or at the next skip
-        }
-        AUDIO_CHECK.postDelayed(() -> finishUnmute(c, am, gen, step + 1), 600);
-    }
-
-    // The volume of the device Spotify plays on, saved by muteAd. Given back as soon as Spotify's
-    // session for that device is there; if the music was moved off it meanwhile, the mark stays and
-    // the volume is given back the next time Spotify plays on another device (AdWatcher), so a
-    // speaker is never left at 0.
-    static void restoreCastVolume(Context c) {
-        Prefs p = new Prefs(c);
-        int cast = p.castVolume();
-        if (cast < 0) return;
-        android.media.session.MediaController remote = AdWatcher.remoteSpotify();
-        if (remote == null) return;
-        remote.setVolumeTo(cast, 0);
-        p.castVolume(-1);
-    }
-
-    static boolean listenerEnabled(Context c) {
-        String s = Settings.Secure.getString(c.getContentResolver(), "enabled_notification_listeners");
-        return s != null && s.contains(new ComponentName(c, AdWatcher.class).flattenToString());
-    }
-
-    static void createChannels(Context c) {
-        NotificationManager nm = c.getSystemService(NotificationManager.class);
-        NotificationChannel s = new NotificationChannel(CH_STATUS, c.getString(R.string.notif_channel_status), NotificationManager.IMPORTANCE_LOW);
-        s.setShowBadge(false);
-        nm.createNotificationChannel(s);
-        nm.createNotificationChannel(new NotificationChannel(CH_ALERT, c.getString(R.string.notif_channel_alert), NotificationManager.IMPORTANCE_DEFAULT));
-        // The pairing code field pops up over Settings, so the code can be typed without leaving the
-        // pairing popup (leaving it ends pairing). Used only for that one notification.
-        nm.createNotificationChannel(new NotificationChannel(CH_PAIR, c.getString(R.string.notif_channel_pair), NotificationManager.IMPORTANCE_HIGH));
-    }
-
-    static Notification statusNotification(Context c) {
-        Prefs p = new Prefs(c);
-        PendingIntent open = PendingIntent.getActivity(c, 0, new Intent(c, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
-        PendingIntent off = PendingIntent.getBroadcast(c, 1, new Intent(c, Receiver.class).setAction(ACTION_OFF), PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(c, CH_STATUS)
-                .setSmallIcon(R.drawable.ic_stat_hush)
-                .setColor(c.getColor(R.color.accent))
-                .setContentTitle(c.getString(R.string.notif_title))
-                .setContentText(SleepTimer.active(c) ? SleepTimer.describe(c)
-                        : c.getResources().getQuantityString(R.plurals.notif_text, (int) Math.min(p.get(Prefs.SKIPPED), Integer.MAX_VALUE),
-                                p.get(Prefs.SKIPPED), p.get(Prefs.MUTED)))
-                .setContentIntent(open)
-                .setOngoing(true)
-                .setShowWhen(false)
-                .addAction(new Notification.Action.Builder(null, c.getString(R.string.notif_stop), off).build())
-                .build();
-    }
-
-    // The status notification is owned by the VPN service while it runs; otherwise posted here.
-    static void refreshNotification(Context c) {
-        NotificationManager nm = c.getSystemService(NotificationManager.class);
-        if (new Prefs(c).enabled()) nm.notify(NOTIF_STATUS, statusNotification(c));
-        else nm.cancel(NOTIF_STATUS);
-    }
-
-    // Xiaomi, Redmi and POCO phones (MIUI / HyperOS) add their own background limits ("Autostart",
-    // battery saver) on top of Android's.
-    static boolean isXiaomi() { return "xiaomi".equalsIgnoreCase(Build.MANUFACTURER); }
-
-    static void alert(Context c, String title, String text, Intent tap) {
-        PendingIntent pi = PendingIntent.getActivity(c, 2, tap, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        c.getSystemService(NotificationManager.class).notify(NOTIF_ALERT, new Notification.Builder(c, CH_ALERT)
-                .setSmallIcon(R.drawable.ic_stat_hush).setColor(c.getColor(R.color.accent))
-                .setContentTitle(title).setContentText(text).setStyle(new Notification.BigTextStyle().bigText(text))
-                .setContentIntent(pi).setAutoCancel(true).build());
-    }
-
-    private static boolean skipAlerted;
-
-    // The first ad that has to be muted because skipping is not ready leads to the fix, once:
-    // Hush's own helper is started again if it can be (or its "tap to resume" notice is shown);
-    // a Shizuku user gets the reminder to start Shizuku (it stops at every reboot); everyone else
-    // gets the one-time setup.
-    static void skipAlert(Context c) {
-        if (skipAlerted) return;
-        skipAlerted = true;
-        Prefs p = new Prefs(c);
-        if (HelperControl.supported() && (p.paired() || p.root())) {
-            HelperControl.ensure(c, p.autoRestart() && HelperControl.canToggleDebugging(c), true);
-            return;
-        }
-        boolean shizuku = Shell.installed(c);
-        Intent open = shizuku ? c.getPackageManager().getLaunchIntentForPackage(Shell.SHIZUKU) : null;
-        if (open == null) open = new Intent(c, HelperControl.supported() ? HelperSetupActivity.class : ShizukuSetupActivity.class);
-        boolean lostPairing = HelperControl.lastResult() == HelperControl.Result.NOT_PAIRED;   // was paired before
-        String text = c.getString(shizuku ? R.string.alert_shizuku_text : lostPairing ? R.string.helper_notice_pair : R.string.alert_setup_text);
-        PendingIntent pi = PendingIntent.getActivity(c, 3, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        c.getSystemService(NotificationManager.class).notify(NOTIF_SHIZUKU, new Notification.Builder(c, CH_ALERT)
-                .setSmallIcon(R.drawable.ic_stat_hush).setColor(c.getColor(R.color.accent))
-                .setContentTitle(c.getString(shizuku ? R.string.alert_shizuku_title : R.string.helper_notice_title))
-                .setContentText(text)
-                .setStyle(new Notification.BigTextStyle().bigText(text))
-                .setContentIntent(pi).setAutoCancel(true).build());
-    }
-
-    // Skipping works again: the notices are no longer needed.
-    static void clearSkipAlert(Context c) {
-        skipAlerted = false;
-        c.getSystemService(NotificationManager.class).cancel(NOTIF_SHIZUKU);
-        HelperControl.cancelNotice(c);
-    }
-
-    // Notification buttons, boot and app-update events.
-    public static class Receiver extends BroadcastReceiver {
-        @Override public void onReceive(Context c, Intent i) {
-            String a = i.getAction();
-            if (ACTION_OFF.equals(a)) setEnabled(c, false);
-            else if (Updater.ACTION_LATER.equals(a)) Updater.cancelNotice(c);   // this version is not announced again
-            else if (SleepTimer.ACTION_SLEEP.equals(a)) SleepTimer.fireFromAlarm(c);
-            else if (ACTION_RESUME.equals(a)) {   // "tap to resume skipping"
-                PendingResult done = goAsync();
-                HelperControl.resumeFromNotice(c, done::finish);
-            } else if (Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)) {
-                Prefs p = new Prefs(c);
-                if (Intent.ACTION_BOOT_COMPLETED.equals(a)) p.mutedByUs(false);   // reboot clears mute
-                else unmuteIfNeeded(c);   // an update killed us mid-ad: don't leave the phone muted
-                if (p.enabled()) { applyDns(c); refreshNotification(c); }
-                // The helper does not survive a reboot, and an update replaces it.
-                HelperControl.onBoot(c);
-            }
-        }
-    }
-}
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éíã¯}N‹Z–‹­¦ëeŠw¬ÕÁ…­…”¥¼¹½±‘µ•Ü¹¡ÕÍ ì()¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹9½Ñ¥™¥…Ñ¥½¸ì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹9½Ñ¥™¥…Ñ¥½¹¡…¹¹•°ì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹9½Ñ¥™¥…Ñ¥½¹5…¹…•Èì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹A•¹‘¥¹%¹Ñ•¹Ðì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹	É½…‘…ÍÑI••¥Ù•Èì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹½µÁ½¹•¹Ñ9…µ”ì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹½¹Ñ•áÐì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹%¹Ñ•¹Ðì)¥µÁ½ÉÐ…¹‘É½¥¹µ•‘¥„¹Õ‘¥½5…¹…•Èì)¥µÁ½ÉÐ…¹‘É½¥¹¹•Ð¹YÁ¹M•ÉÙ¥”ì)¥µÁ½ÉÐ…¹‘É½¥¹½Ì¹	Õ¥±ì)¥µÁ½ÉÐ…¹‘É½¥¹ÁÉ½Ù¥‘•È¹M•ÑÑ¥¹Ìì)¥µÁ½ÉÐ…¹‘É½¥¹Í•ÉÙ¥”¹¹½Ñ¥™¥…Ñ¥½¸¹9½Ñ¥™¥…Ñ¥½¹1¥ÍÑ•¹•ÉM•ÉÙ¥”ì((¼¼Q¡”µ…ÍÑ•ÈÍÝ¥Ñ ¸QÕÉ¹¥¹œ!ÕÍ ½¸ÍÑ…ÉÑÌÑ¡”9L™¥±Ñ•È€¡¥˜•¹…‰±•¤…¹…ÉµÌÑ¡”…Ý…Ñ¡•Èì(¼¼ÑÕÉ¹¥¹œ¥Ð½™˜ÍÑ½ÁÌÑ¡”™¥±Ñ•È°‘¥Í…ÉµÌÑ¡”Ý…Ñ¡•È…¹É•ÍÑ½É•Ì…¹äÙ½±Õµ”!ÕÍ µÕÑ•¸)™¥¹…°±…ÍÌ!ÕÍ ì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œQ€ô€‰!ÕÍ ˆì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œMA=Q%d€ô€‰½´¹ÍÁ½Ñ¥™ä¹µÕÍ¥Œˆì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œ!}MQQUL€ô€‰ÍÑ…ÑÕÌˆ°!}1IP€ô€‰…±•ÉÐˆ°!}A%H€ô€‰Á…¥Èˆì(€€€ÍÑ…Ñ¥Œ™¥¹…°¥¹Ð9=Q%}MQQUL€ô€Ä°9=Q%}1IP€ô€È°9=Q%}M!%iU-T€ô€Ì°9=Q%}!1AH€ô€Ðì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œQ%=9}=€ô€‰¥¼¹½±‘µ•Ü¹¡ÕÍ ¹QUI9}=ˆ°Q%=9}IMU5€ô€‰¥¼¹½±‘µ•Ü¹¡ÕÍ ¹IMU5ˆì((€€€ÁÉ¥Ù…Ñ”!ÕÍ  ¤íô((€€€ÍÑ…Ñ¥ŒÙ½¥Í•Ñ¹…‰±•¡½¹Ñ•áÐŒ°‰½½±•…¸½¸¤ì(€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€À¹•¹…‰±•¡½¸¤ì(€€€€€€€¥˜€¡½¸¤ì(€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Œ°Ù•¹ÑÌ¹%9<°€‰I¥ÑááM¡ ÑÕÉ¹•½¸ˆ¤ì(€€€€€€€€€€€…ÁÁ±å¹Ì¡Œ¤ì(€€€€€€€€€€€	…­É½Õ¹‘Õ‘¥¼¹…ÁÁ±ä¡Œ¤ì(€€€€€€€€€€€!•±Á•É½¹ÑÉ½°¹­••ÁIÕ¹¹¥¹=™™]¥™¥Íå¹Œ¡Œ¤ì(€€€€€€€€€€€ÑÉäì9½Ñ¥™¥…Ñ¥½¹1¥ÍÑ•¹•ÉM•ÉÙ¥”¹É•ÅÕ•ÍÑI•‰¥¹¡¹•Ü½µÁ½¹•¹Ñ9…µ”¡Œ°‘]…Ñ¡•È¹±…ÍÌ¤¤ìô…Ñ €¡á•ÁÑ¥½¸¥¹½É•¤íô(€€€€€€€€€€€‘]…Ñ¡•È¹•¹ÍÕÉ•½¹¹•Ñ•¡Œ¤ì€€€¼¼É•ÅÕ•ÍÑI•‰¥¹…±½¹”‘½•Ì¹½ÐÉ•½¹¹•Ð„‘É½ÁÁ•Ý…Ñ¡•È(€€€€€€€ô•±Í”ì(€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Œ°Ù•¹ÑÌ¹%9<°€‰I¥ÑááM¡ ÑÕÉ¹•½™˜ˆ¤ì(€€€€€€€€€€€ÍÑ½ÁYÁ¸¡Œ¤ì(€€€€€€€€€€€	…­É½Õ¹‘Õ‘¥¼¹É•Í•Ñ]¡•¹%‘±” ¤ì(€€€€€€€€€€€Õ¹µÕÑ•%™9••‘•¡Œ¤ì(€€€€€€€ô(€€€€€€€É•™É•Í¡9½Ñ¥™¥…Ñ¥½¸¡Œ¤ì(€€€€€€€‘]…Ñ¡•È¹É•¡•¬ ¤ì(€€€ô((€€€€¼¼MÑ…ÉÑÌ½ÈÍÑ½ÁÌÑ¡”YA8Ñ¼µ…Ñ Ñ¡”Í•ÑÑ¥¹Ì¸I•ÑÕÉ¹Ì™…±Í”¥˜YA8Á•Éµ¥ÍÍ¥½¸¥Ìµ¥ÍÍ¥¹œ¸(€€€ÍÑ…Ñ¥Œ‰½½±•…¸…ÁÁ±å¹Ì¡½¹Ñ•áÐŒ¤ì(€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€¥˜€ …À¹•¹…‰±• ¤ñð€…À¹‘¹Ì ¤¤ìÍÑ½ÁYÁ¸¡Œ¤ìÉ•ÑÕÉ¸ÑÉÕ”ìô(€€€€€€€¥˜€¡YÁ¹M•ÉÙ¥”¹ÁÉ•Á…É”¡Œ¤€„ô¹Õ±°¤É•ÑÕÉ¸™…±Í”ì(€€€€€€€Œ¹ÍÑ…ÉÑ½É•É½Õ¹‘M•ÉÙ¥”¡¹•Ü%¹Ñ•¹Ð¡Œ°¹ÍYÁ¹M•ÉÙ¥”¹±…ÍÌ¤¤ì(€€€€€€€É•ÑÕÉ¸ÑÉÕ”ì(€€€ô((€€€ÍÑ…Ñ¥ŒÙ½¥ÍÑ½ÁYÁ¸¡½¹Ñ•áÐŒ¤ì(€€€€€€€¥˜€¡¹ÍYÁ¹M•ÉÙ¥”¹ÉÕ¹¹¥¹œ¤Œ¹ÍÑ…ÉÑM•ÉÙ¥”¡¹•Ü%¹Ñ•¹Ð¡Œ°¹ÍYÁ¹M•ÉÙ¥”¹±…ÍÌ¤¹Í•ÑÑ¥½¸¡¹ÍYÁ¹M•ÉÙ¥”¹Q%=9}MQ=@¤¤ì(€€€ô((€€€€¼¼5ÕÑ¥¹œMÁ½Ñ¥™ä¥ÑÍ•±˜ÉÕ¹Ì„Í¡•±°½µµ…¹°Ý¡¥ Ñ…­•Ì„µ½µ•¹Ðè‘½¹”½™˜Ñ¡”…±±•ÈÌ(€€€€¼¼Ñ¡É•…°½¹”…Ð„Ñ¥µ”Í¼„µÕÑ”…¹Ñ¡”Õ¹µÕÑ”…™Ñ•È¥Ð¹•Ù•ÈÍÝ…ÀÁ±…•Ì¸(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°©…Ù„¹ÕÑ¥°¹½¹ÕÉÉ•¹Ð¹á•ÕÑ½ÉM•ÉÙ¥”MA=Q%e}U%<€ô(€€€€€€€€€€€©…Ù„¹ÕÑ¥°¹½¹ÕÉÉ•¹Ð¹á•ÕÑ½ÉÌ¹¹•ÝM¥¹±•Q¡É•…‘á•ÕÑ½È ¤ì((€€€€¼¼5ÕÑ•Ì…¸…¸¹‘É½¥ÕÑ¼Á±…åÌMÁ½Ñ¥™äÌ…Õ‘¥¼¥ÑÍ•±˜°Í¼Ñ¡”Á¡½¹”ÌµÕÍ¥ŒÙ½±Õµ”‘½•Ì¹½Ð(€€€€¼¼É•… Ñ¡”…ÈèÑ¡•É”MÁ½Ñ¥™ä¥ÌµÕÑ•‘¥É•Ñ±ä€¡¹••‘ÌÑ¡”¡•±Á•È½ÈM¡¥éÕ­Ô¤¸±Í•Ý¡•É”Ñ¡”(€€€€¼¼µÕÍ¥ŒÙ½±Õµ”¥ÌµÕÑ•°Ý¡¥ Ý½É­ÌÝ¥Ñ¡½ÕÐ…¹äÍ•ÑÕÀ¸(€€€ÍÑ…Ñ¥ŒÙ½¥µÕÑ•¡½¹Ñ•áÐŒ¤ì(€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€€¼¼MÁ½Ñ¥™äÁ±…åÌ½¸„ÍÁ•…­•È°QX½È½µÁÕÑ•ÈèÑ¡”Á¡½¹”ÌÙ½±Õµ”‘½•Ì¹½ÐÉ•… ¥Ð°‰ÕÐÑ¡”(€€€€€€€€¼¼Í•ÍÍ¥½¸ÌÉ•µ½Ñ”Ù½±Õµ”‘½•Ì¸!ÕÍ ÑÕÉ¹Ì¥ÐÑ¼€À…¹‰…¬Ý¡•¸Ñ¡”…¥Ì½Ù•È¸(€€€€€€€…¹‘É½¥¹µ•‘¥„¹Í•ÍÍ¥½¸¹5•‘¥…½¹ÑÉ½±±•ÈÉ•µ½Ñ”€ô‘]…Ñ¡•È¹É•µ½Ñ•MÁ½Ñ¥™ä ¤ì(€€€€€€€¥˜€¡É•µ½Ñ”€„ô¹Õ±°¤ì(€€€€€€€€€€€¥¹Ð¹½Ü€ôÉ•µ½Ñ”¹•ÑA±…å‰…­%¹™¼ ¤¹•ÑÕÉÉ•¹ÑY½±Õµ” ¤ì(€€€€€€€€€€€¥˜€¡À¹…ÍÑY½±Õµ” ¤€ð€À€˜˜¹½Ü€ø€À¤À¹…ÍÑY½±Õµ”¡¹½Ü¤ì(€€€€€€€€€€€É•µ½Ñ”¹Í•ÑY½±Õµ•Q¼ À°€À¤ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€¥˜€¡M¡•±°¹É•…‘ä ¤€˜˜…È¹½¹¹•Ñ•¡Œ¤¤ì(€€€€€€€€€€€À¹µÕÑ•‘MÁ½Ñ¥™ä¡ÑÉÕ”¤ì(€€€€€€€€€€€MA=Q%e}U%<¹•á•ÕÑ”  ¤€´øM¡•±°¹ÉÕ¸¡¥¼¹½±‘µ•Ü¹¡ÕÍ ¹¡•±Á•È¹½µµ…¹‘Ì¹5UQ}MA=Q%d¤¤ì(€€€€€€€ô•±Í”ì(€€€€€€€€€€€Õ¹µÕÑ••¸¬¬ì€€€¼¼„Á•¹‘¥¹œÕ¹µÕÑ”¡•¬µÕÍÐ¹½ÐÕ¹‘¼Ñ¡¥ÌµÕÑ”(€€€€€€€€€€€Œ¹•ÑMåÍÑ•µM•ÉÙ¥”¡Õ‘¥½5…¹…•È¹±…ÍÌ¤¹…‘©ÕÍÑMÑÉ•…µY½±Õµ”¡Õ‘¥½5…¹…•È¹MQI5}5UM%°Õ‘¥½5…¹…•È¹)UMQ}5UQ°€À¤ì(€€€€€€€€€€€À¹µÕÑ•‘	åUÌ¡ÑÉÕ”¤ì(€€€€€€€ô(€€€ô((€€€€¼¼M¥±•¹•ÌMÁ½Ñ¥™ä…±½¹”€¡¥ÑÌA1e}U%<…ÁÀµ½À°Ñ¡É½Õ Ñ¡”¡•±Á•È¤ìÕ¹µÕÑ•%™9••‘•Õ¹‘½•Ì¥Ð¸(€€€ÍÑ…Ñ¥ŒÙ½¥µÕÑ•MÁ½Ñ¥™ä¡½¹Ñ•áÐŒ¤ì(€€€€€€€¹•ÜAÉ•™Ì¡Œ¤¹µÕÑ•‘MÁ½Ñ¥™ä¡ÑÉÕ”¤ì(€€€€€€€MA=Q%e}U%<¹•á•ÕÑ”  ¤€´øM¡•±°¹ÉÕ¸¡¥¼¹½±‘µ•Ü¹¡ÕÍ ¹¡•±Á•È¹½µµ…¹‘Ì¹5UQ}MA=Q%d¤¤ì(€€€ô((€€€ÍÑ…Ñ¥ŒÙ½¥Õ¹µÕÑ•%™9••‘•¡½¹Ñ•áÐŒ¤ì(€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€É•ÍÑ½É•…ÍÑY½±Õµ”¡Œ¤ì(€€€€€€€¥˜€¡À¹µÕÑ•‘MÁ½Ñ¥™ä ¤€˜˜M¡•±°¹É•…‘ä ¤¤ì€€€¼¼Ý¥Ñ¡½ÕÐ„‰…­•¹¥ÐÍÑ…åÌµ…É­•…¹¥ÌÕ¹‘½¹”±…Ñ•È(€€€€€€€€€€€À¹µÕÑ•‘MÁ½Ñ¥™ä¡™…±Í”¤ì(€€€€€€€€€€€MA=Q%e}U%<¹•á•ÕÑ”  ¤€´øM¡•±°¹ÉÕ¸¡¥¼¹½±‘µ•Ü¹¡ÕÍ ¹¡•±Á•È¹½µµ…¹‘Ì¹U95UQ}MA=Q%d¤¤ì(€€€€€€€ô(€€€€€€€¥˜€ …À¹µÕÑ•‘	åUÌ ¤¤É•ÑÕÉ¸ì(€€€€€€€Õ‘¥½5…¹…•È…´€ôŒ¹•ÑMåÍÑ•µM•ÉÙ¥”¡Õ‘¥½5…¹…•È¹±…ÍÌ¤ì(€€€€€€€…´¹…‘©ÕÍÑMÑÉ•…µY½±Õµ”¡Õ‘¥½5…¹…•È¹MQI5}5UM%°Õ‘¥½5…¹…•È¹)UMQ}U95UQ°€À¤ì(€€€€€€€€¼¼!ÕÍ µÕÍÐ¹•Ù•È±•…Ù”Ñ¡”Á¡½¹”ÌµÕÍ¥ŒµÕÑ•€¡¥Ð¡…ÁÁ•¹•½¹”¥¸Ñ•ÍÑ¥¹œ¤è€‰µÕÑ•‰ä!ÕÍ ˆ(€€€€€€€€¼¼¥Ì±•…É•½¹±ä½¹”Ñ¡”µÕÍ¥Œ¥ÌÉ•…±±ä‰…¬½¸¸%˜Ñ¡”Õ¹µÕÑ”‘¥¹½ÐÑ…­”°!ÕÍ ÑÉ¥•Ì(€€€€€€€€¼¼……¥¸°Ñ¡•¸Ñ¡”ÍåÍÑ•´µ±•Ù•°Ý…ä€¡¥ÑÌ¡•±Á•ÈÁÉ•ÍÍ•ÌÑ¡”µÕÑ”­•ä°½¹±ä¥˜ÍÑ¥±°µÕÑ•¤¸(€€€€€€€€¼¼%˜¹½¹”½˜Ñ¡…Ð¥ÌÁ½ÍÍ¥‰±”É¥¡Ð¹½Ü°Ñ¡”µ…É¬ÍÑ…åÌ…¹!ÕÍ ÑÉ¥•Ì……¥¸…ÌÍ½½¸…Ì¥ÑÌ(€€€€€€€€¼¼¡•±Á•È½¹¹•ÑÌ°…ÐÑ¡”¹•áÐÍ­¥À°½ÈÝ¡•¸Ñ¡”¹•áÐµÕÑ•…•¹‘Ì¸(€€€€€€€¥¹Ð•¸€ô€¬­Õ¹µÕÑ••¸ì(€€€€€€€½¹Ñ•áÐ…ÁÀ€ôŒ¹•ÑÁÁ±¥…Ñ¥½¹½¹Ñ•áÐ ¤ì(€€€€€€€U%=}!,¹Á½ÍÑ•±…å•  ¤€´ø™¥¹¥Í¡U¹µÕÑ”¡…ÁÀ°…´°•¸°€À¤°€ÐÀÀ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°…¹‘É½¥¹½Ì¹!…¹‘±•ÈU%=}!,€ô¹•Ü…¹‘É½¥¹½Ì¹!…¹‘±•È¡…¹‘É½¥¹½Ì¹1½½Á•È¹•Ñ5…¥¹1½½Á•È ¤¤ì(€€€€¼¼¹•Ý•ÈµÕÑ”½ÈÕ¹µÕÑ”É•Á±…•Ì„Á•¹‘¥¹œ¡•¬¸(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½±…Ñ¥±”¥¹ÐÕ¹µÕÑ••¸ì((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒÙ½¥™¥¹¥Í¡U¹µÕÑ”¡½¹Ñ•áÐŒ°Õ‘¥½5…¹…•È…´°¥¹Ð•¸°¥¹ÐÍÑ•À¤ì(€€€€€€€¥˜€¡•¸€„ôÕ¹µÕÑ••¸¤É•ÑÕÉ¸ì(€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€¥˜€ ……´¹¥ÍMÑÉ•…µ5ÕÑ”¡Õ‘¥½5…¹…•È¹MQI5}5UM%¤¤ìÀ¹µÕÑ—¯}¶‰žËkºwµçA•Ý¥Ñ¡½ÕÐ±•…Ù¥¹œÑ¡”(€€€€€€€€¼¼Á…¥É¥¹œÁ½ÁÕÀ€¡±•…Ù¥¹œ¥Ð•¹‘ÌÁ…¥É¥¹œ¤¸UÍ•½¹±ä™½ÈÑ¡…Ð½¹”¹½Ñ¥™¥…Ñ¥½¸¸(€€€€€€€¹´¹É•…Ñ•9½Ñ¥™¥…Ñ¥½¹¡…¹¹•°¡¹•Ü9½Ñ¥™¥…Ñ¥½¹¡…¹¹•°¡!}A%H°Œ¹•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹¹½Ñ¥™}¡…¹¹•±}Á…¥È¤°9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹%5A=IQ9}!% ¤¤ì(€€€ô((€€€ÍÑ…Ñ¥Œ9½Ñ¥™¥…Ñ¥½¸ÍÑ…ÑÕÍ9½Ñ¥™¥…Ñ¥½¸¡½¹Ñ•áÐŒ¤ì(€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€A•¹‘¥¹%¹Ñ•¹Ð½Á•¸€ôA•¹‘¥¹%¹Ñ•¹Ð¹•ÑÑ¥Ù¥Ñä¡Œ°€À°¹•Ü%¹Ñ•¹Ð¡Œ°5…¥¹Ñ¥Ù¥Ñä¹±…ÍÌ¤°A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1¤ì(€€€€€€€A•¹‘¥¹%¹Ñ•¹Ð½™˜€ôA•¹‘¥¹%¹Ñ•¹Ð¹•Ñ	É½…‘…ÍÐ¡Œ°€Ä°¹•Ü%¹Ñ•¹Ð¡Œ°I••¥Ù•È¹±…ÍÌ¤¹Í•ÑÑ¥½¸¡Q%=9}=¤°A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1¤ì(€€€€€€€É•ÑÕÉ¸¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	Õ¥±‘•È¡Œ°!}MQQUL¤(€€€€€€€€€€€€€€€€¹Í•ÑMµ…±±%½¸¡H¹‘É…Ý…‰±”¹¥}ÍÑ…Ñ}¡ÕÍ ¤(€€€€€€€€€€€€€€€€¹Í•Ñ½±½È¡Œ¹•Ñ½±½È¡H¹½±½È¹…•¹Ð¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ¥Ñ±”¡Œ¹•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹¹½Ñ¥™}Ñ¥Ñ±”¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ•áÐ¡M±••ÁQ¥µ•È¹…Ñ¥Ù”¡Œ¤€üM±••ÁQ¥µ•È¹‘•ÍÉ¥‰”¡Œ¤(€€€€€€€€€€€€€€€€€€€€€€€€èŒ¹•ÑI•Í½ÕÉ•Ì ¤¹•ÑEÕ…¹Ñ¥ÑåMÑÉ¥¹œ¡H¹Á±ÕÉ…±Ì¹¹½Ñ¥™}Ñ•áÐ°€¡¥¹Ð¤5…Ñ ¹µ¥¸¡À¹•Ð¡AÉ•™Ì¹M-%AA¤°%¹Ñ••È¹5a}Y1U¤°(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€À¹•Ð¡AÉ•™Ì¹M-%AA¤°À¹•Ð¡AÉ•™Ì¹5UQ¤¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹Ñ%¹Ñ•¹Ð¡½Á•¸¤(€€€€€€€€€€€€€€€€¹Í•Ñ=¹½¥¹œ¡ÑÉÕ”¤(€€€€€€€€€€€€€€€€¹Í•ÑM¡½Ý]¡•¸¡™…±Í”¤(€€€€€€€€€€€€€€€€¹…‘‘Ñ¥½¸¡¹•Ü9½Ñ¥™¥…Ñ¥½¸¹Ñ¥½¸¹	Õ¥±‘•È¡¹Õ±°°Œ¹•ÑMÑÉ¥¹œ¡H¹ÍÑÉ¥¹œ¹¹½Ñ¥™}ÍÑ½À¤°½™˜¤¹‰Õ¥± ¤¤(€€€€€€€€€€€€€€€€¹‰Õ¥± ¤ì(€€€ô((€€€€¼¼Q¡”ÍÑ…ÑÕÌ¹½Ñ¥™¥…Ñ¥½¸¥Ì½Ý¹•‰äÑ¡”YA8Í•ÉÙ¥”Ý¡¥±”¥ÐÉÕ¹Ìì½Ñ¡•ÉÝ¥Í”Á½ÍÑ•¡•É”¸(€€€ÍÑ…Ñ¥ŒÙ½¥É•™É•Í¡9½Ñ¥™¥…Ñ¥½¸¡½¹Ñ•áÐŒ¤ì(€€€€€€€9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹´€ôŒ¹•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤ì(€€€€€€€¥˜€¡¹•ÜAÉ•™Ì¡Œ¤¹•¹…‰±• ¤¤¹´¹¹½Ñ¥™ä¡9=Q%}MQQUL°ÍÑ…ÑÕÍ9½Ñ¥™¥…Ñ¥½¸¡Œ¤¤ì(€€€€€€€•±Í”¹´¹…¹•°¡9=Q%}MQQUL¤ì(€€€ô((€€€€¼¼a¥…½µ¤°I•‘µ¤…¹A=<Á¡½¹•Ì€¡5%U$€¼!åÁ•É=L¤…‘Ñ¡•¥È½Ý¸‰…­É½Õ¹±¥µ¥ÑÌ€ ‰ÕÑ½ÍÑ…ÉÐˆ°(€€€€¼¼‰…ÑÑ•ÉäÍ…Ù•È¤½¸Ñ½À½˜¹‘É½¥Ì¸(€€€ÍÑ…Ñ¥Œ‰½½±•…¸¥Ía¥…½µ¤ ¤ìÉ•ÑÕÉ¸€‰á¥…½µ¤ˆ¹•ÅÕ…±Í%¹½É•…Í”¡	Õ¥±¹59UQUIH¤ìô((€€€ÍÑ…Ñ¥ŒÙ½¥…±•ÉÐ¡½¹Ñ•áÐŒ°MÑÉ¥¹œÑ¥Ñ±”°MÑÉ¥¹œÑ•áÐ°%¹Ñ•¹ÐÑ…À¤ì(€€€€€€€A•¹‘¥¹%¹Ñ•¹ÐÁ¤€ôA•¹‘¥¹%¹Ñ•¹Ð¹•ÑÑ¥Ù¥Ñä¡Œ°€È°Ñ…À°A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1ðA•¹‘¥¹%¹Ñ•¹Ð¹1}UAQ}UII9P¤ì(€€€€€€€Œ¹•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤¹¹½Ñ¥™ä¡9=Q%}1IP°¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	Õ¥±‘•È¡Œ°!}1IP¤(€€€€€€€€€€€€€€€€¹Í•ÑMµ…±±%½¸¡H¹‘É…Ý…‰±”¹¥}ÍÑ…Ñ}¡ÕÍ ¤¹Í•Ñ½±½È¡Œ¹•Ñ½±½È¡H¹½±½È¹…•¹Ð¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ¥Ñ±”¡Ñ¥Ñ±”¤¹Í•Ñ½¹Ñ•¹ÑQ•áÐ¡Ñ•áÐ¤¹Í•ÑMÑå±”¡¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	¥Q•áÑMÑå±” ¤¹‰¥Q•áÐ¡Ñ•áÐ¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹Ñ%¹Ñ•¹Ð¡Á¤¤¹Í•ÑÕÑ½…¹•°¡ÑÉÕ”¤¹‰Õ¥± ¤¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ‰½½±•…¸Í­¥Á±•ÉÑ•ì((€€€€¼¼Q¡”™¥ÉÍÐ…Ñ¡…Ð¡…ÌÑ¼‰”µÕÑ•‰•…ÕÍ”Í­¥ÁÁ¥¹œ¥Ì¹½ÐÉ•…‘ä±•…‘ÌÑ¼Ñ¡”™¥à°½¹”è(€€€€¼¼!ÕÍ Ì½Ý¸¡•±Á•È¥ÌÍÑ…ÉÑ•……¥¸¥˜¥Ð…¸‰”€¡½È¥ÑÌ€‰Ñ…ÀÑ¼É•ÍÕµ”ˆ¹½Ñ¥”¥ÌÍ¡½Ý¸¤ì(€€€€¼¼„M¡¥éÕ­ÔÕÍ•È•ÑÌÑ¡”É•µ¥¹‘•ÈÑ¼ÍÑ…ÉÐM¡¥éÕ­Ô€¡¥ÐÍÑ½ÁÌ…Ð•Ù•ÉäÉ•‰½½Ð¤ì•Ù•Éå½¹”•±Í”(€€€€¼¼•ÑÌÑ¡”½¹”µÑ¥µ”Í•ÑÕÀ¸(€€€ÍÑ…Ñ¥ŒÙ½¥Í­¥Á±•ÉÐ¡½¹Ñ•áÐŒ¤ì(€€€€€€€¥˜€¡Í­¥Á±•ÉÑ•¤É•ÑÕÉ¸ì(€€€€€€€Í­¥Á±•ÉÑ•€ôÑÉÕ”ì(€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€¥˜€¡!•±Á•É½¹ÑÉ½°¹ÍÕÁÁ½ÉÑ• ¤€˜˜€¡À¹Á…¥É• ¤ñðÀ¹É½½Ð ¤¤¤ì(€€€€€€€€€€€!•±Á•É½¹ÑÉ½°¹•¹ÍÕÉ”¡Œ°À¹…ÕÑ½I•ÍÑ…ÉÐ ¤€˜˜!•±Á•É½¹ÑÉ½°¹…¹Q½±••‰Õ¥¹œ¡Œ¤°ÑÉÕ”¤ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€‰½½±•…¸Í¡¥éÕ­Ô€ôM¡•±°¹¥¹ÍÑ…±±•¡Œ¤ì(€€€€€€€%¹Ñ•¹Ð½Á•¸€ôÍ¡¥éÕ­Ô€üŒ¹•ÑA…­…•5…¹…•È ¤¹•Ñ1…Õ¹¡%¹Ñ•¹Ñ½ÉA…­…”¡M¡•±°¹M!%iU-T¤€è¹Õ±°ì(€€€€€€€¥˜€¡½Á•¸€ôô¹Õ±°¤½Á•¸€ô¹•Ü%¹Ñ•¹Ð¡Œ°!•±Á•É½¹ÑÉ½°¹ÍÕÁÁ½ÉÑ• ¤€ü!•±Á•ÉM•ÑÕÁÑ¥Ù¥Ñä¹±…ÍÌ€èM¡¥éÕ­ÕM•ÑÕÁÑ¥Ù¥Ñä¹±…ÍÌ¤ì(€€€€€€€‰½½±•…¸±½ÍÑA…¥É¥¹œ€ô!•±Á•É½¹ÑÉ½°¹±…ÍÑI•ÍÕ±Ð ¤€ôô!•±Á•É½¹ÑÉ½°¹I•ÍÕ±Ð¹9=Q}A%Iì€€€¼¼Ý…ÌÁ…¥É•‰•™½É”(€€€€€€€MÑÉ¥¹œÑ•áÐ€ôŒ¹•ÑMÑÉ¥¹œ¡Í¡¥éÕ­Ô€üH¹ÍÑÉ¥¹œ¹…±•ÉÑ}Í¡¥éÕ­Õ}Ñ•áÐ€è±½ÍÑA…¥É¥¹œ€üH¹ÍÑÉ¥¹œ¹¡•±Á•É}¹½Ñ¥•}Á…¥È€èH¹ÍÑÉ¥¹œ¹…±•ÉÑ}Í•ÑÕÁ}Ñ•áÐ¤ì(€€€€€€€A•¹‘¥¹%¹Ñ•¹ÐÁ¤€ôA•¹‘¥¹%¹Ñ•¹Ð¹•ÑÑ¥Ù¥Ñä¡Œ°€Ì°½Á•¸°A•¹‘¥¹%¹Ñ•¹Ð¹1}%55UQ	1ðA•¹‘¥¹%¹Ñ•¹Ð¹1}UAQ}UII9P¤ì(€€€€€€€Œ¹•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤¹¹½Ñ¥™ä¡9=Q%}M!%iU-T°¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	Õ¥±‘•È¡Œ°!}1IP¤(€€€€€€€€€€€€€€€€¹Í•ÑMµ…±±%½¸¡H¹‘É…Ý…‰±”¹¥}ÍÑ…Ñ}¡ÕÍ ¤¹Í•Ñ½±½È¡Œ¹•Ñ½±½È¡H¹½±½È¹…•¹Ð¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ¥Ñ±”¡Œ¹•ÑMÑÉ¥¹œ¡Í¡¥éÕ­Ô€üH¹ÍÑÉ¥¹œ¹…±•ÉÑ}Í¡¥éÕ­Õ}Ñ¥Ñ±”€èH¹ÍÑÉ¥¹œ¹¡•±Á•É}¹½Ñ¥•}Ñ¥Ñ±”¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹ÑQ•áÐ¡Ñ•áÐ¤(€€€€€€€€€€€€€€€€¹Í•ÑMÑå±”¡¹•Ü9½Ñ¥™¥…Ñ¥½¸¹	¥Q•áÑMÑå±” ¤¹‰¥Q•áÐ¡Ñ•áÐ¤¤(€€€€€€€€€€€€€€€€¹Í•Ñ½¹Ñ•¹Ñ%¹Ñ•¹Ð¡Á¤¤¹Í•ÑÕÑ½…¹•°¡ÑÉÕ”¤¹‰Õ¥± ¤¤ì(€€€ô((€€€€¼¼M­¥ÁÁ¥¹œÝ½É­Ì……¥¸èÑ¡”¹½Ñ¥•Ì…É”¹¼±½¹•È¹••‘•¸(€€€ÍÑ…Ñ¥ŒÙ½¥±•…ÉM­¥Á±•ÉÐ¡½¹Ñ•áÐŒ¤ì(€€€€€€€Í­¥Á±•ÉÑ•€ô™…±Í”ì(€€€€€€€Œ¹•ÑMåÍÑ•µM•ÉÙ¥”¡9½Ñ¥™¥…Ñ¥½¹5…¹…•È¹±…ÍÌ¤¹…¹•°¡9=Q%}M!%iU-T¤ì(€€€€€€€!•±Á•É½¹ÑÉ½°¹…¹•±9½Ñ¥”¡Œ¤ì(€€€ô((€€€€¼¼9½Ñ¥™¥…Ñ¥½¸‰ÕÑÑ½¹Ì°‰½½Ð…¹…ÁÀµÕÁ‘…Ñ”•Ù•¹ÑÌ¸(€€€ÁÕ‰±¥ŒÍÑ…Ñ¥Œ±…ÍÌI••¥Ù•È•áÑ•¹‘Ì	É½…‘…ÍÑI••¥Ù•Èì(€€€€€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥ŒÙ½¥½¹I••¥Ù”¡½¹Ñ•áÐŒ°%¹Ñ•¹Ð¤¤ì(€€€€€€€€€€€MÑÉ¥¹œ„€ô¤¹•ÑÑ¥½¸ ¤ì(€€€€€€€€€€€¥˜€¡Q%=9}=¹•ÅÕ…±Ì¡„¤¤Í•Ñ¹…‰±•¡Œ°™…±Í”¤ì(€€€€€€€€€€€•±Í”¥˜€¡UÁ‘…Ñ•È¹Q%=9}1QH¹•ÅÕ…±Ì¡„¤¤UÁ‘…Ñ•È¹…¹•±9½Ñ¥”¡Œ¤ì€€€¼¼Ñ¡¥ÌÙ•ÉÍ¥½¸¥Ì¹½Ð…¹¹½Õ¹•……¥¸(€€€€€€€€€€€•±Í”¥˜€¡M±••ÁQ¥µ•È¹Q%=9}M1@¹•ÅÕ…±Ì¡„¤¤M±••ÁQ¥µ•È¹™¥É•É½µ±…É´¡Œ¤ì(€€€€€€€€€€€•±Í”¥˜€¡Q%=9}IMU5¹•ÅÕ…±Ì¡„¤¤ì€€€¼¼€‰Ñ…ÀÑ¼É•ÍÕµ”Í­¥ÁÁ¥¹œˆ(€€€€€€€€€€€€€€€A•¹‘¥¹I•ÍÕ±Ð‘½¹”€ô½Íå¹Œ ¤ì(€€€€€€€€€€€€€€€!•±Á•É½¹ÑÉ½°¹É•ÍÕµ•É½µ9½Ñ¥”¡Œ°‘½¹”èé™¥¹¥Í ¤ì(€€€€€€€€€€€ô•±Í”¥˜€¡%¹Ñ•¹Ð¹Q%=9}	==Q}=5A1Q¹•ÅÕ…±Ì¡„¤ñð%¹Ñ•¹Ð¹Q%=9}5e}A-}IA1¹•ÅÕ…±Ì¡„¤¤ì(€€€€€€€€€€€€€€€AÉ•™ÌÀ€ô¹•ÜAÉ•™Ì¡Œ¤ì(€€€€€€€€€€€€€€€¥˜€¡%¹Ñ•¹Ð¹Q%=9}	==Q}=5A1Q¹•ÅÕ…±Ì¡„¤¤À¹µÕÑ•‘	åUÌ¡™…±Í”¤ì€€€¼¼É•‰½½Ð±•…ÉÌµÕÑ”(€€€€€€€€€€€€€€€•±Í”Õ¹µÕÑ•%™9••‘•¡Œ¤ì€€€¼¼…¸ÕÁ‘…Ñ”­¥±±•ÕÌµ¥µ…è‘½¸Ð±•…Ù”Ñ¡”Á¡½¹”µÕÑ•(€€€€€€€€€€€€€€€¥˜€¡À¹•¹…‰±• ¤¤ì…ÁÁ±å¹Ì¡Œ¤ìÉ•™É•Í¡9½Ñ¥™¥…Ñ¥½¸¡Œ¤ìô(€€€€€€€€€€€€€€€€¼¼Q¡”¡•±Á•È‘½•Ì¹½ÐÍÕÉÙ¥Ù”„É•‰½½Ð°…¹…¸ÕÁ‘…Ñ”É•Á±…•Ì¥Ð¸(€€€€€€€€€€€€€€€!•±Á•É½¹ÑÉ½°¹½¹	½½Ð¡Œ¤ì(€€€€€€€€€€€ô(€€€€€€€ô(€€€ô)ô(

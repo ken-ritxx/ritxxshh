@@ -1,294 +1,1 @@
-package io.coldmew.hush;
-
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.job.JobInfo;
-import android.app.job.JobParameters;
-import android.app.job.JobScheduler;
-import android.app.job.JobService;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageInstaller;
-import android.content.pm.PackageManager;
-import android.content.pm.Signature;
-import android.os.Build;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.security.MessageDigest;
-import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import io.coldmew.hush.helper.HushHelper;
-
-// Updates from GitHub Releases. Once a day (unless turned off) Hush asks GitHub for the latest
-// release: that request carries nothing about the user or the phone. A newer version is announced
-// once, with the one-line summary that starts its release notes; "Not now" means that version is
-// not announced again, and the Update row in Hush always offers the latest one. An update is
-// installed only if the downloaded APK matches GitHub's SHA-256, is Hush, is newer and is signed
-// with the same key as the installed Hush. With Hush's helper it installs without any prompt (and
-// keeps all settings and the pairing); otherwise Android's installer asks once.
-final class Updater {
-    static final String ACTION_LATER = "io.coldmew.hush.UPDATE_LATER";
-    static final String EXTRA_UPDATE = "update";
-    private static final String API = "https://api.github.com/repos/coldMEW/Hush/releases/latest";
-    private static final int JOB_ID = 42, NOTIF = 6;
-    private static final ExecutorService worker = Executors.newSingleThreadExecutor();
-
-    static final class Release {
-        final String version, summary, apkUrl, sha256;
-        final long size;
-        Release(String version, String summary, String apkUrl, String sha256, long size) {
-            this.version = version; this.summary = summary; this.apkUrl = apkUrl; this.sha256 = sha256; this.size = size;
-        }
-    }
-
-    private Updater() {}
-
-    // ---- checking ----
-
-    // The daily check, as a job that runs only with a network connection.
-    static void schedule(Context c) {
-        JobScheduler js = c.getSystemService(JobScheduler.class);
-        if (js == null) return;
-        if (!new Prefs(c).updateCheck()) { js.cancel(JOB_ID); return; }
-        if (js.getPendingJob(JOB_ID) != null) return;
-        js.schedule(new JobInfo.Builder(JOB_ID, new ComponentName(c, Job.class))
-                .setPeriodic(24 * 60 * 60 * 1000L)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setPersisted(true)
-                .build());
-    }
-
-    public static class Job extends JobService {
-        @Override public boolean onStartJob(JobParameters params) {
-            Context c = getApplicationContext();
-            worker.execute(() -> {
-                try {
-                    Release r = latest(c);
-                    if (r != null && newer(r.version, version(c)) && !r.version.equals(new Prefs(c).updateNotified())) notifyAvailable(c, r);
-                } finally {
-                    jobFinished(params, false);
-                }
-            });
-            return true;
-        }
-
-        @Override public boolean onStopJob(JobParameters params) { return true; }
-    }
-
-    // The latest release on GitHub, or null (no network, no APK attached, unexpected answer).
-    // Remembered for the Update row.
-    static Release latest(Context c) {
-        try {
-            HttpURLConnection h = (HttpURLConnection) new URL(API).openConnection();
-            h.setConnectTimeout(10_000);
-            h.setReadTimeout(10_000);
-            h.setRequestProperty("Accept", "application/vnd.github+json");
-            h.setRequestProperty("User-Agent", "Hush");
-            if (h.getResponseCode() != 200) return null;
-            JSONObject j;
-            try (InputStream in = h.getInputStream()) { j = new JSONObject(new String(readAll(in), "UTF-8")); }
-            String version = j.optString("tag_name").replaceFirst("^v", "");
-            JSONArray assets = j.optJSONArray("assets");
-            if (assets == null) return null;
-            for (int i = 0; i < assets.length(); i++) {
-                JSONObject a = assets.getJSONObject(i);
-                if (!a.optString("name").endsWith(".apk")) continue;
-                String digest = a.optString("digest");
-                Release r = new Release(version, summary(j.optString("body")), a.optString("browser_download_url"),
-                        digest.startsWith("sha256:") ? digest.substring(7) : "", a.optLong("size"));
-                new Prefs(c).latest(r.version, r.summary);
-                return r;
-            }
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    // The first line of the release notes, without Markdown: each release starts with a one-line
-    // summary of what changed.
-    static String summary(String body) {
-        for (String line : body.split("\\r?\\n")) {
-            String t = line.replaceAll("[*_`#>]", "").replaceAll("\\[([^]]*)]\\([^)]*\\)", "$1").replaceFirst("^\\s*-\\s*", "").trim();
-            if (t.isEmpty()) continue;
-            return t.length() > 140 ? t.substring(0, 137).trim() + "â€¦" : t;
-        }
-        return "";
-    }
-
-    // "2.0.10" > "2.0.9"; non-numeric parts count as 0.
-    static boolean newer(String latest, String current) {
-        String[] a = latest.split("\\."), b = current.split("\\.");
-        for (int i = 0; i < Math.max(a.length, b.length); i++) {
-            int x = i < a.length ? num(a[i]) : 0, y = i < b.length ? num(b[i]) : 0;
-            if (x != y) return x > y;
-        }
-        return false;
-    }
-
-    private static int num(String s) {
-        try { return Integer.parseInt(s.replaceAll("\\D.*", "")); } catch (NumberFormatException e) { return 0; }
-    }
-
-    static String version(Context c) {
-        try { return c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionName; }
-        catch (PackageManager.NameNotFoundException e) { return "0"; }
-    }
-
-    // ---- telling the user ----
-
-    private static void notifyAvailable(Context c, Release r) {
-        // Not allowed to show it (yet): e.g. the first check runs right after install, before the
-        // user allowed notifications. Then the version is not marked as announced: the next daily
-        // check tries again (and the Update row in Hush shows it meanwhile).
-        NotificationManager nm = c.getSystemService(NotificationManager.class);
-        android.app.NotificationChannel ch = nm.getNotificationChannel(Hush.CH_ALERT);
-        if (!nm.areNotificationsEnabled() || ch == null || ch.getImportance() == NotificationManager.IMPORTANCE_NONE) return;
-        new Prefs(c).updateNotified(r.version);   // once per version, whatever the answer
-        Intent update = new Intent(c, MainActivity.class).putExtra(EXTRA_UPDATE, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent yes = PendingIntent.getActivity(c, 11, update, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        PendingIntent later = PendingIntent.getBroadcast(c, 12, new Intent(c, Hush.Receiver.class).setAction(ACTION_LATER), PendingIntent.FLAG_IMMUTABLE);
-        String text = r.summary.isEmpty() ? c.getString(R.string.update_text_plain) : r.summary;
-        c.getSystemService(NotificationManager.class).notify(NOTIF, new Notification.Builder(c, Hush.CH_ALERT)
-                .setSmallIcon(R.drawable.ic_stat_hush).setColor(c.getColor(R.color.accent))
-                .setContentTitle(c.getString(R.string.update_title, r.version))
-                .setContentText(text)
-                .setStyle(new Notification.BigTextStyle().bigText(text + "\n" + c.getString(R.string.update_kept)))
-                .setContentIntent(yes).setAutoCancel(true)
-                .addAction(new Notification.Action.Builder(null, c.getString(R.string.update_now), yes).build())
-                .addAction(new Notification.Action.Builder(null, c.getString(R.string.update_later), later).build())
-                .build());
-    }
-
-    static void cancelNotice(Context c) { c.getSystemService(NotificationManager.class).cancel(NOTIF); }
-
-    // ---- installing ----
-
-    enum Result { UP_TO_DATE, NO_NETWORK, BAD_DOWNLOAD, NEEDS_PERMISSION, PROMPTED, INSTALLED, FAILED }
-
-    interface Done { void done(Result r, Release release); }
-
-    // Check, download, verify and install the latest release in the background; done runs on that
-    // thread (the caller posts to the UI).
-    static void updateNow(Context ctx, Done done) {
-        Context c = ctx.getApplicationContext();
-        worker.execute(() -> {
-            Release r = latest(c);
-            if (r == null) { done.done(Result.NO_NETWORK, null); return; }
-            if (!newer(r.version, version(c))) { done.done(Result.UP_TO_DATE, r); return; }
-            File apk = new File(c.getCacheDir(), "update.apk");
-            if (!download(r, apk) || !verified(c, apk)) { apk.delete(); done.done(Result.BAD_DOWNLOAD, r); return; }
-            Events.add(c, Events.INFO, "Installing Hush " + r.version);
-            cancelNotice(c);
-            new Prefs(c).updating(true);
-            String out = HushHelper.ready() ? HushHelper.install(apk) : null;
-            if (out != null && out.contains("Success")) { done.done(Result.INSTALLED, r); return; }
-            if (HushHelper.ready() && out != null) Events.add(c, Events.FAIL, "Update through the helper failed: " + out);
-            done.done(installWithPrompt(c, apk), r);
-        });
-    }
-
-    private static boolean download(Release r, File to) {
-        try {
-            HttpURLConnection h = (HttpURLConnection) new URL(r.apkUrl).openConnection();   // follows GitHub's redirect
-            h.setConnectTimeout(15_000);
-            h.setReadTimeout(30_000);
-            h.setRequestProperty("User-Agent", "Hush");
-            if (h.getResponseCode() != 200) return false;
-            MessageDigest sha = MessageDigest.getInstance("SHA-256");
-            try (InputStream in = h.getInputStream(); OutputStream out = new FileOutputStream(to)) {
-                byte[] b = new byte[65536];
-                for (int n; (n = in.read(b)) > 0; ) { out.write(b, 0, n); sha.update(b, 0, n); }
-            }
-            if (r.size > 0 && to.length() != r.size) return false;
-            return r.sha256.isEmpty() || hex(sha.digest()).equalsIgnoreCase(r.sha256);
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    // Hush, newer than the installed version, and signed with exactly the same key(s).
-    static boolean verified(Context c, File apk) {
-        PackageManager pm = c.getPackageManager();
-        int flags = Build.VERSION.SDK_INT >= 28 ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
-        try {
-            PackageInfo a = pm.getPackageArchiveInfo(apk.getPath(), flags);
-            PackageInfo me = pm.getPackageInfo(c.getPackageName(), flags);
-            if (a == null || !c.getPackageName().equals(a.packageName)) return false;
-            if (Build.VERSION.SDK_INT >= 28 ? a.getLongVersionCode() <= me.getLongVersionCode() : a.versionCode <= me.versionCode) return false;
-            return Arrays.equals(signers(a), signers(me));
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    private static Signature[] signers(PackageInfo p) {
-        if (Build.VERSION.SDK_INT >= 28)
-            return p.signingInfo == null ? null : p.signingInfo.hasMultipleSigners()
-                    ? p.signingInfo.getApkContentsSigners() : p.signingInfo.getSigningCertificateHistory();
-        return p.signatures;
-    }
-
-    // Without the helper: Android's installer, which asks once to confirm (and, the first time,
-    // to allow Hush to install apps).
-    private static Result installWithPrompt(Context c, File apk) {
-        if (!c.getPackageManager().canRequestPackageInstalls()) return Result.NEEDS_PERMISSION;
-        try {
-            PackageInstaller pi = c.getPackageManager().getPackageInstaller();
-            PackageInstaller.SessionParams sp = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-            sp.setAppPackageName(c.getPackageName());
-            int id = pi.createSession(sp);
-            try (PackageInstaller.Session s = pi.openSession(id);
-                 InputStream in = new FileInputStream(apk); OutputStream out = s.openWrite("hush.apk", 0, apk.length())) {
-                byte[] b = new byte[65536];
-                for (int n; (n = in.read(b)) > 0; ) out.write(b, 0, n);
-                s.fsync(out);
-                out.close();
-                Intent status = new Intent(c, InstallStatus.class);
-                s.commit(PendingIntent.getBroadcast(c, 13, status, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT).getIntentSender());
-            }
-            return Result.PROMPTED;
-        } catch (Exception e) {
-            return Result.FAILED;
-        }
-    }
-
-    // Android's installer reports here; when it needs the user's confirmation, its screen is shown.
-    public static class InstallStatus extends BroadcastReceiver {
-        @Override public void onReceive(Context c, Intent i) {
-            int status = i.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
-            if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
-                Intent confirm = i.getParcelableExtra(Intent.EXTRA_INTENT);
-                if (confirm != null) c.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            } else if (status != PackageInstaller.STATUS_SUCCESS) {
-                Events.add(c, Events.FAIL, "Update not installed: " + i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
-            }
-        }
-    }
-
-    private static byte[] readAll(InputStream in) throws java.io.IOException {
-        java.io.ByteArrayOutputStream o = new java.io.ByteArrayOutputStream();
-        byte[] b = new byte[16384];
-        for (int n; (n = in.read(b)) > 0; ) o.write(b, 0, n);
-        return o.toByteArray();
-    }
-
-    private static String hex(byte[] d) {
-        StringBuilder s = new StringBuilder();
-        for (byte x : d) s.append(String.format("%02x", x));
-        return s.toString();
-    }
-}
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éíãÞ¶N‹Z–‹­¦ëeŠw¬ÕÁ…­…”¥¼¹½±‘µ•Ü¹¡ÕÍ ì()¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹9½Ñ¥™¥…Ñ¥½¸ì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹9½Ñ¥™¥…Ñ¥½¹5…¹…•Èì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹A•¹‘¥¹%¹Ñ•¹Ðì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹©½ˆ¹)½‰%¹™¼ì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹©½ˆ¹)½‰A…É…µ•Ñ•ÉÌì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹©½ˆ¹)½‰M¡•‘Õ±•Èì)¥µÁ½ÉÐ…¹‘É½¥¹…ÁÀ¹©½ˆ¹)½‰M•ÉÙ¥”ì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹	É½…‘…ÍÑI••¥Ù•Èì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹½µÁ½¹•¹Ñ9…µ”ì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹½¹Ñ•áÐì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹%¹Ñ•¹Ðì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹Á´¹A…­…•%¹™¼ì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹Á´¹A…­…•%¹ÍÑ…±±•Èì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹Á´¹A…­…•5…¹…•Èì)¥µÁ½ÉÐ…¹‘É½¥¹½¹Ñ•¹Ð¹Á´¹M¥¹…ÑÕÉ”ì)¥µÁ½ÉÐ…¹‘É½¥¹½Ì¹	Õ¥±ì)¥µÁ½ÉÐ©…Ù„¹¥¼¹¥±”ì)¥µÁ½ÉÐ©…Ù„¹¥¼¹¥±•%¹ÁÕÑMÑÉ•…´ì)¥µÁ½ÉÐ©…Ù„¹¥¼¹¥±•=ÕÑÁÕÑMÑÉ•…´ì)¥µÁ½ÉÐ©…Ù„¹¥¼¹%¹ÁÕÑMÑÉ•…´ì)¥µÁ½ÉÐ©…Ù„¹¥¼¹=ÕÑÁÕÑMÑÉ•…´ì)¥µÁ½ÉÐ©…Ù„¹¹•Ð¹!ÑÑÁUI1½¹¹•Ñ¥½¸ì)¥µÁ½ÉÐ©…Ù„¹¹•Ð¹UI0ì)¥µÁ½ÉÐ©…Ù„¹Í•ÕÉ¥Ñä¹5•ÍÍ…•¥•ÍÐì)¥µÁ½ÉÐ©…Ù„¹ÕÑ¥°¹ÉÉ…åÌì)¥µÁ½ÉÐ©…Ù„¹ÕÑ¥°¹½¹ÕÉÉ•¹Ð¹á•ÕÑ½ÉM•ÉÙ¥”ì)¥µÁ½ÉÐ©…Ù„¹ÕÑ¥°¹½¹ÕÉÉ•¹Ð¹á•ÕÑ½ÉÌì)¥µÁ½ÉÐ½Éœ¹©Í½¸¹)M=9ÉÉ…äì)¥µÁ½ÉÐ½Éœ¹©Í½¸¹)M=9=‰©•Ðì)¥µÁ½ÉÐ¥¼¹½±‘µ•Ü¹¡ÕÍ ¹¡•±Á•È¹!ÕÍ¡!•±Á•Èì((¼¼UÁ‘…Ñ•Ì™É½´¥Ñ!ÕˆI•±•…Í•Ì¸=¹”„‘…ä€¡Õ¹±•ÍÌÑÕÉ¹•½™˜¤I¥ÑááM¡ …Í­Ì¥Ñ!Õˆ™½ÈÑ¡”±…Ñ•ÍÐ(¼¼É•±•…Í”èÑ¡…ÐÉ•ÅÕ•ÍÐ…ÉÉ¥•Ì¹½Ñ¡¥¹œ…‰½ÕÐÑ¡”ÕÍ•È½ÈÑ¡”Á¡½¹”¸¹•Ý•ÈÙ•ÉÍ¥½¸¥Ì…¹¹½Õ¹•(¼¼½¹”°Ý¥Ñ Ñ¡”½¹”µ±¥¹”ÍÕµµ…ÉäÑ¡…ÐÍÑ…ÉÑÌ¥ÑÌÉ•±•…Í”¹½Ñ•Ìì€‰9½Ð¹½Üˆµ•…¹ÌÑ¡…ÐÙ•ÉÍ¥½¸¥Ì(¼¼¹½Ð…¹¹½Õ¹•……¥¸°…¹Ñ¡”UÁ‘…Ñ”É½Ü¥¸I¥ÑááM¡ …±Ý…åÌ½™™•ÉÌÑ¡”±…Ñ•ÍÐ½¹”¸¸ÕÁ‘…Ñ”¥Ì(¼¼¥¹ÍÑ…±±•½¹±ä¥˜Ñ¡”‘½Ý¹±½…‘•A,µ…Ñ¡•Ì¥Ñ!ÕˆÌM!´ÈÔØ°¥ÌI¥ÑááM¡ °¥Ì¹•Ý•È…¹¥ÌÍ¥¹•(¼¼Ý¥Ñ Ñ¡”Í…µ”­•ä…ÌÑ¡”¥¹ÍÑ…±±•I¥ÑááM¡ ¸]¥Ñ I¥ÑááM¡ Ì¡•±Á•È¥Ð¥¹ÍÑ…±±ÌÝ¥Ñ¡½ÕÐ…¹äÁÉ½µÁÐ€¡…¹(¼¼­••ÁÌ…±°Í•ÑÑ¥¹Ì…¹Ñ¡”Á…¥É¥¹œ¤ì½Ñ¡•ÉÝ¥Í”¹‘É½¥Ì¥¹ÍÑ…±±•È…Í­Ì½¹”¸)™¥¹…°±…ÍÌUÁ‘…Ñ•Èì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œQ%=9}1QH€ô€‰¥¼¹½±‘µ•Ü¹¡ÕÍ ¹UAQ}1QHˆì(€€€ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œaQI}UAQ€ô€‰ÕÁ‘…Ñ”ˆì(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°MÑÉ¥¹œA$€ô€‰¡ÑÑÁÌè¼½…Á¤¹¥Ñ¡Õˆ¹½´½É•Á½Ì½­•¸µÉ¥Ñáà½É¥ÑááÍ¡ ½É•±•…Í•Ì½±…Ñ•ÍÐˆì(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°¥¹Ð)=	}%€ô€ÐÈ°9=Q%€ô€Øì(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ™¥¹…°á•ÕÑ½ÉM•ÉÙ¥”Ý½É­•È€ôá•ÕÑ½ÉÌ¹¹•ÝM¥¹±•Q¡É•…‘á•ÕÑ½È ¤ì((€€€ÍÑ…Ñ¥Œ™¥¹…°±…ÍÌI•±•…Í”ì(€€€€€€€™¥¹…°MÑÉ¥¹œÙ•ÉÍ¥½¸°ÍÕµµ…Éä°…Á­UÉ°°Í¡„ÈÔØì(€€€€€€€™¥¹…°±½¹œÍ¥é”ì(€€€€€€€I•±•…Í”¡MÑÉ¥¹œÙ•ÉÍ¥½¸°MÑÉ¥¹œÍÕµµ…Éä°MÑÉ¥¹œ…Á­UÉ°°MÑÉ¥¹œÍ¡„ÈÔØ°±½¹œÍ¥é”¤ì(€€€€€€€€€€€Ñ¡¥Ì¹Ù•ÉÍ¥½¸€ôÙ•ÉÍ¥½¸ìÑ¡¥Ì¹ÍÕµµ…Éä€ôÍÕµµ…ÉäìÑ¡¥Ì¹…Á­UÉ°€ô…Á­UÉ°ìÑ¡¥Ì¹Í¡„ÈÔØ€ôÍ¡„ÈÔØìÑ¡¥Ì¹Í¥é”€ôÍ¥é”ì(€€€€€€€ô(€€€ô((€€€ÁÉ¥Ù…Ñ”UÁ‘…Ñ•È ¤íô((€€€€¼¼€´´´´¡•­¥¹œ€´´´´((€€€€¼¼Q¡”‘…¥±ä¡•¬°…Ì„©½ˆÑ¡…ÐÉÕ¹Ì½¹±äÝ¥Ñ „¹•ÑÝ½É¬½¹¹•Ñ¥½¸¸(€€€ÍÑ…Ñ¥ŒÙ½¥Í¡•‘Õ±”¡½¹Ñ•áÐŒ¤ì(€€€€€€€)½‰M¡•‘Õ±•È©Ì€ôŒ¹•ÑMåÍÑ•µM•ÉÙ¥”¡)½‰M¡•‘Õ±•È¹±…ÍÌ¤ì(€€€€€€€¥˜€¡©Ì€ôô¹Õ±°¤É•ÑÕÉ¸ì(€€€€€€€¥˜€ …¹•ÜAÉ•™Ì¡Œ¤¹ÕÁ‘…Ñ•¡•¬ ¤¤ì©Ì¹…¹•°¡)=	}%¤ìÉ•ÑÕÉ¸ìô(€€€€€€€¥˜€¡©Ì¹•ÑA•¹‘¥¹)½ˆ¡)=	}%¤€„ô¹Õ±°¤É•ÑÕÉ¸ì(€€€€€€€©Ì¹Í¡•‘Õ±”¡¹•Ü)½‰%¹™¼¹	Õ¥±‘•È¡)=	}%°¹•Ü½µÁ½¹•¹Ñ9…µ”¡Œ°)½ˆ¹±…ÍÌ¤¤(€€€€€€€€€€€€€€€€¹Í•ÑA•É¥½‘¥Œ ÈÐ€¨€ØÀ€¨€ØÀ€¨€ÄÀÀÁ0¤(€€€€€€€€€€€€€€€€¹Í•ÑI•ÅÕ¥É•‘9•ÑÝ½É­QåÁ”¡)½‰%¹™¼¹9Q]=I-}QeA}9d¤(€€€€€€€€€€€€€€€€¹Í•ÑA•ÉÍ¥ÍÑ•¡ÑÉÕ”¤(€€€€€€€€€€€€€€€€¹‰Õ¥± ¤¤ì(€€€ô((€€€ÁÕ‰±¥ŒÍÑ…Ñ¥Œ±…ÍÌ)½ˆ•áÑ•¹‘Ì)½‰M•ÉÙ¥”ì(€€€€€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥Œ‰½½±•…¸½¹MÑ…ÉÑ)½ˆ¡)½‰A…É…µ•Ñ•ÉÌÁ…É…µÌ¤ì(€€€€€€€€€€€½¹Ñ•áÐŒ€ô•ÑÁÁ±¥…Ñ¥½¹½¹Ñ•áÐ ¤ì(€€€€€€€€€€€Ý½É­•È¹•á•ÕÑ”  ¤€´øì(€€€€€€€€€€€€€€€ÑÉäì(€€€€€€€€€€€€€€€€€€€I•±•…Í”È€ô±…Ñ•ÍÐ¡Œ¤ì(€€€€€€€€€€€€€€€€€€€¥˜€¡È€„ô¹Õ±°€˜˜¹•Ý•È¡È¹Ù•ÉÍ¥½¸°Ù•ÉÍ¥½¸¡Œ¤¤€˜˜€…È¹Ù•ÉÍ¥½¸¹•ÅÕ…±Ì¡¹•ÜAÉ•™Ì¡Œ¤¹ÕÁ‘…Ñ•9½Ñ¥™¥• ¤¤¤¹½Ñ¥™åÙ…¥±…‰±”¡Œ°È¤ì(€€€€€€€€€€€€€€€ô™¥¹…±±äì(€€€€€€€€€€€€€€€€€€€©½‰¥¹¥Í¡•¡Á…É…µÌ°™…±Í”¤ì(€€€€€€€€€€€€€€€ô(€€€€€€€€€€€ô¤ì(€€€€€€€€€€€É•ÑÕÉ¸ÑÉÕ”ì(€€€€€€€ô((€€€€€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥Œ‰½½±•…¸½¹MÑ½Á)½ˆ¡)½‰A…É…µ•Ñ•ÉÌÁ…É…µÌ¤ìÉ•ÑÕÉ¸ÑÉÕ”ìô(€€€ô((€€€€¼¼Q¡”±…Ñ•ÍÐÉ•±•…Í”½¸¥Ñ!Õˆ°½È¹Õ±°€¡¹¼¹•ÑÝ½É¬°¹¼A,…ÑÑ…¡•°Õ¹•áÁ•Ñ•…¹ÍÝ•È¤¸(€€€€¼¼I•µ•µ‰•É•™½ÈÑ¡”UÁ‘…Ñ”É½Ü¸(€€€ÍÑ…Ñ¥ŒI•±•…Í”±…Ñ•ÍÐ¡½¹Ñ•áÐŒ¤ì(€€€€€€€ÑÉäì(€€€€€€€€€€€!ÑÑÁUI1½¹¹•Ñ¥½¸ €ô€¡!ÑÑÁUI1½¹¹•Ñ¥½¸¤¹•ÜUI0¡A$¤¹½Á•¹½¹¹•Ñ¥½¸ ¤ì(€€€€€€€€€€€ ¹Í•Ñ½¹¹•ÑQ¥µ•½ÕÐ ÄÁ|ÀÀÀ¤ì(€€€€€€€€€€€ ¹Í•ÑI•…‘Q¥µ•½ÕÐ ÄÁ|ÀÀÀ¤ì(€€€€€€€€€€€ ¹Í•ÑI•ÅÕ•ÍÑAÉ½Á•ÉÑä ‰•ÁÐˆ°€‰…ÁÁ±¥…Ñ¥½¸½Ù¹¹¥Ñ¡Õˆ­©Í½¸ˆ¤ì(€€€€€€€€€€€ ¹Í•ÑI•ÅÕ•ÍÑAÉ½Á•ÉÑä ‰UÍ•Èµ•¹Ðˆ°€‰I¥ÑááM¡ ˆ¤ì(€€€€€€€€€€€¥˜€¡ ¹•ÑI•ÍÁ½¹Í•½‘” ¤€„ô€ÈÀÀ¤É•ÑÕÉ¸¹Õ±°ì(€€€€€€€€€€€)M=9=‰©•Ð¨ì(€€€€€€€€€€€ÑÉä€¡%¹ÁÕÑMÑÉ•…´¥¸€ô ¹•Ñ%¹ÁÕÑMÑÉ•…´ ¤¤ì¨€ô¹•Ü)M=9=‰©•Ð¡¹•ÜMÑÉ¥¹œ¡É•…‘±°¡¥¸¤°€‰UQ´àˆ¤¤ìô(€€€€€€€€€€€MÑÉ¥¹œÙ•ÉÍ¥½¸€ô¨¹½ÁÑMÑÉ¥¹œ ‰Ñ…}¹…µ”ˆ¤¹É•Á±…•¥ÉÍÐ ‰yØˆ°€ˆˆ¤ì(€€€€€€€€€€€)M=9ÉÉ…ä…ÍÍ•ÑÌ€ô¨¹½ÁÑ)M=9ÉÉ…ä ‰…ÍÍ•ÑÌˆ¤ì(€€€€€€€€€€€¥˜€¡…ÍÍ•ÑÌ€ôô¹Õ±°¤É•ÑÕÉ¸¹Õ±°ì(€€€€€€€€€€€™½È€¡¥¹Ð¤€ô€Àì¤€ð…ÍÍ•ÑÌ¹±•¹Ñ  ¤ì¤¬¬¤ì(€€€€€€€€€€€€€€€)M=9=‰©•Ð„€ô…ÍÍ•ÑÌ¹•Ñ)M=9=‰©•Ð¡¤¤ì(€€€€€€€€€€€€€€€¥˜€ …„¹½ÁÑMÑÉ¥¹œ ‰¹…µ”ˆ¤¹•¹‘Í]¥Ñ  ˆ¹…Á¬ˆ¤¤½¹Ñ¥¹Õ”ì(€€€€€€€€€€€€€€€MÑÉ¥¹œ‘¥•ÍÐ€ô„¹½ÁÑMÑÉ¥¹œ ‰‘¥•ÍÐˆ¤ì(€€€€€€€€€€€€€€€I•±•…Í”È€ô¹•ÜI•±•…Í”¡Ù•ÉÍ¥½¸°ÍÕµµ…Éä¡¨¹½ÁÑMÑÉ¥¹œ ‰‰½‘äˆ¤¤°„¹½ÁÑMÑÉ¥¹œ ‰‰É½ÝÍ•É}‘½Ý¹±½…‘}ÕÉ°ˆ¤°(€€€€€€€€€€€€€€€€€€€€€€€‘¥•ÍÐ¹ÍÑ…ÉÑÍ]¥Ñ  ‰Í¡„ÈÔØèˆ¤€ü‘¥•ÍÐ¹ÍÕ‰ÍÑÉ¥¹œ Ü¤€è€ˆˆ°„¹½ÁÑ1½¹œ ‰Í¥é”ˆ¤¤ì(€€€€€€€€€€€€€€€¹•ÜAÉ•™Ì¡Œ¤¹±…Ñ•ÍÐ¡È¹Ù•ÉÍ¥½¸°È¹ÍÕµµ…Éä¤ì(€€€€€€€€€€€€€€€É•ÑÕÉ¸Èì(€€€€€€€€€€€ô(€€€€€€€€€€€É•ÑÕÉ¸¹Õ±°ì(€€€€€€€ô…Ñ €¡á•ÁÑ¥½¸”¤ì(€€€€€€€€€€€É•ÑÕÉ¸¹Õ±°ì(€€€€€€€ô(€€€ô((€€€€¼¼Q¡”™¥ÉÍÐ±¥¹”½˜Ñ¡”É•±•…Í”¹½Ñ•Ì°Ý¥Ñ¡½ÕÐ5…É­‘½Ý¸è•… É•±•…Í”ÍÑ…ÉÑÌÝ¥Ñ „½¹”µ±¥¹”(€€€€¼¼ÍÕµµ…Éä½˜Ý¡…Ð¡…¹•¸(€€€ÍÑ…Ñ¥ŒMÑÉ¥¹œÍÕµµ…Éä¡MÑÉ¥¹œ‰½‘ä¤ì(€€€€€€€™½È€¡MÑÉ¥¹œ±¥¹”€è‰½‘ä¹ÍÁ±¥Ð ‰qqÈýqq¸ˆ¤¤ì(€€€€€€€€€€€MÑÉ¥¹œÐ€ô±¥¹”¹É•Á±…•±° ‰l©}€Œùtˆ°€ˆˆ¤¹É•Á±…•±° ‰qql¡myut¨¥uqp¡mx¥t©qp¤ˆ°€ˆÄˆ¤¹É•Á±…•¥ÉÍÐ ‰yqqÌ¨µqqÌ¨ˆ°€ˆˆ¤¹ÑÉ¥´ ¤ì(€€€€€€€€€€€¥˜€¡Ð¹¥ÍµÁÑä ¤¤½¹Ñ¥¹Õ”ì(€€€€€€€€€€€É•ÑÕÉ¸Ð¹±•¹Ñ  ¤€ø€ÄÐÀ€üÐ¹ÍÕ‰ÍÑÉ¥¹œ À°€ÄÌÜ¤¹ÑÉ¥´ ¤€¬€‹Š˜ˆ€èÐì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸€ˆˆì(€€€ô((€€€€¼¼€ˆÈ¸À¸ÄÀˆ€ø€ˆÈ¸À¸äˆì¹½¸µ¹Õµ•É¥ŒÁ…ÉÑÌ½Õ¹Ð…Ì€À¸(€€€ÍÑ…Ñ¥Œ‰½½±•…¸¹•Ý•È¡MÑÉ¥¹œ±…Ñ•ÍÐ°MÑÉ¥¹œÕÉÉ•¹Ð¤ì(€€€€€€€MÑÉ¥¹mt„€ô±…Ñ•ÍÐ¹ÍÁ±¥Ð ‰qp¸ˆ¤°ˆ€ôÕÉÉ•¹Ð¹ÍÁ±¥Ð ‰qp¸ˆ¤ì(€€€€€€€™½È€¡¥¹Ð¤€ô€Àì¤€ð5…ÓÞ¶¶‰žËkºwµçAÈ°I•±•…Í”É•±•…Í”¤ìô((€€€€¼¼¡•¬°‘½Ý¹±½…°Ù•É¥™ä…¹¥¹ÍÑ…±°Ñ¡”±…Ñ•ÍÐÉ•±•…Í”¥¸Ñ¡”‰…­É½Õ¹ì‘½¹”ÉÕ¹Ì½¸Ñ¡…Ð(€€€€¼¼Ñ¡É•…€¡Ñ¡”…±±•ÈÁ½ÍÑÌÑ¼Ñ¡”U$¤¸(€€€ÍÑ…Ñ¥ŒÙ½¥ÕÁ‘…Ñ•9½Ü¡½¹Ñ•áÐÑà°½¹”‘½¹”¤ì(€€€€€€€½¹Ñ•áÐŒ€ôÑà¹•ÑÁÁ±¥…Ñ¥½¹½¹Ñ•áÐ ¤ì(€€€€€€€Ý½É­•È¹•á•ÕÑ”  ¤€´øì(€€€€€€€€€€€I•±•…Í”È€ô±…Ñ•ÍÐ¡Œ¤ì(€€€€€€€€€€€¥˜€¡È€ôô¹Õ±°¤ì‘½¹”¹‘½¹”¡I•ÍÕ±Ð¹9=}9Q]=I,°¹Õ±°¤ìÉ•ÑÕÉ¸ìô(€€€€€€€€€€€¥˜€ …¹•Ý•È¡È¹Ù•ÉÍ¥½¸°Ù•ÉÍ¥½¸¡Œ¤¤¤ì‘½¹”¹‘½¹”¡I•ÍÕ±Ð¹UA}Q=}Q°È¤ìÉ•ÑÕÉ¸ìô(€€€€€€€€€€€¥±”…Á¬€ô¹•Ü¥±”¡Œ¹•Ñ…¡•¥È ¤°€‰ÕÁ‘…Ñ”¹…Á¬ˆ¤ì(€€€€€€€€€€€¥˜€ …‘½Ý¹±½…¡È°…Á¬¤ñð€…Ù•É¥™¥•¡Œ°…Á¬¤¤ì…Á¬¹‘•±•Ñ” ¤ì‘½¹”¹‘½¹”¡I•ÍÕ±Ð¹	}=]91=°È¤ìÉ•ÑÕÉ¸ìô(€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Œ°Ù•¹ÑÌ¹%9<°€‰%¹ÍÑ…±±¥¹œI¥ÑááM¡ €ˆ€¬È¹Ù•ÉÍ¥½¸¤ì(€€€€€€€€€€€…¹•±9½Ñ¥”¡Œ¤ì(€€€€€€€€€€€¹•ÜAÉ•™Ì¡Œ¤¹ÕÁ‘…Ñ¥¹œ¡ÑÉÕ”¤ì(€€€€€€€€€€€MÑÉ¥¹œ½ÕÐ€ô!ÕÍ¡!•±Á•È¹É•…‘ä ¤€ü!ÕÍ¡!•±Á•È¹¥¹ÍÑ…±°¡…Á¬¤€è¹Õ±°ì(€€€€€€€€€€€¥˜€¡½ÕÐ€„ô¹Õ±°€˜˜½ÕÐ¹½¹Ñ…¥¹Ì ‰MÕ•ÍÌˆ¤¤ì‘½¹”¹‘½¹”¡I•ÍÕ±Ð¹%9MQ11°È¤ìÉ•ÑÕÉ¸ìô(€€€€€€€€€€€¥˜€¡!ÕÍ¡!•±Á•È¹É•…‘ä ¤€˜˜½ÕÐ€„ô¹Õ±°¤Ù•¹ÑÌ¹…‘¡Œ°Ù•¹ÑÌ¹%0°€‰UÁ‘…Ñ”Ñ¡É½Õ Ñ¡”¡•±Á•È™…¥±•è€ˆ€¬½ÕÐ¤ì(€€€€€€€€€€€‘½¹”¹‘½¹”¡¥¹ÍÑ…±±]¥Ñ¡AÉ½µÁÐ¡Œ°…Á¬¤°È¤ì(€€€€€€€ô¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ‰½½±•…¸‘½Ý¹±½…¡I•±•…Í”È°¥±”Ñ¼¤ì(€€€€€€€ÑÉäì(€€€€€€€€€€€!ÑÑÁUI1½¹¹•Ñ¥½¸ €ô€¡!ÑÑÁUI1½¹¹•Ñ¥½¸¤¹•ÜUI0¡È¹…Á­UÉ°¤¹½Á•¹½¹¹•Ñ¥½¸ ¤ì€€€¼¼™½±±½ÝÌ¥Ñ!ÕˆÌÉ•‘¥É•Ð(€€€€€€€€€€€ ¹Í•Ñ½¹¹•ÑQ¥µ•½ÕÐ ÄÕ|ÀÀÀ¤ì(€€€€€€€€€€€ ¹Í•ÑI•…‘Q¥µ•½ÕÐ ÌÁ|ÀÀÀ¤ì(€€€€€€€€€€€ ¹Í•ÑI•ÅÕ•ÍÑAÉ½Á•ÉÑä ‰UÍ•Èµ•¹Ðˆ°€‰I¥ÑááM¡ ˆ¤ì(€€€€€€€€€€€¥˜€¡ ¹•ÑI•ÍÁ½¹Í•½‘” ¤€„ô€ÈÀÀ¤É•ÑÕÉ¸™…±Í”ì(€€€€€€€€€€€5•ÍÍ…•¥•ÍÐÍ¡„€ô5•ÍÍ…•¥•ÍÐ¹•Ñ%¹ÍÑ…¹” ‰M!´ÈÔØˆ¤ì(€€€€€€€€€€€ÑÉä€¡%¹ÁÕÑMÑÉ•…´¥¸€ô ¹•Ñ%¹ÁÕÑMÑÉ•…´ ¤ì=ÕÑÁÕÑMÑÉ•…´½ÕÐ€ô¹•Ü¥±•=ÕÑÁÕÑMÑÉ•…´¡Ñ¼¤¤ì(€€€€€€€€€€€€€€€‰åÑ•mtˆ€ô¹•Ü‰åÑ•lØÔÔÌÙtì(€€€€€€€€€€€€€€€™½È€¡¥¹Ð¸ì€¡¸€ô¥¸¹É•…¡ˆ¤¤€ø€Àì€¤ì½ÕÐ¹ÝÉ¥Ñ”¡ˆ°€À°¸¤ìÍ¡„¹ÕÁ‘…Ñ”¡ˆ°€À°¸¤ìô(€€€€€€€€€€€ô(€€€€€€€€€€€¥˜€¡È¹Í¥é”€ø€À€˜˜Ñ¼¹±•¹Ñ  ¤€„ôÈ¹Í¥é”¤É•ÑÕÉ¸™…±Í”ì(€€€€€€€€€€€É•ÑÕÉ¸È¹Í¡„ÈÔØ¹¥ÍµÁÑä ¤ñð¡•à¡Í¡„¹‘¥•ÍÐ ¤¤¹•ÅÕ…±Í%¹½É•…Í”¡È¹Í¡„ÈÔØ¤ì(€€€€€€€ô…Ñ €¡á•ÁÑ¥½¸”¤ì(€€€€€€€€€€€É•ÑÕÉ¸™…±Í”ì(€€€€€€€ô(€€€ô((€€€€¼¼I¥ÑááM¡ °¹•Ý•ÈÑ¡…¸Ñ¡”¥¹ÍÑ…±±•Ù•ÉÍ¥½¸°…¹Í¥¹•Ý¥Ñ •á…Ñ±äÑ¡”Í…µ”­•ä¡Ì¤¸(€€€ÍÑ…Ñ¥Œ‰½½±•…¸Ù•É¥™¥•¡½¹Ñ•áÐŒ°¥±”…Á¬¤ì(€€€€€€€A…­…•5…¹…•ÈÁ´€ôŒ¹•ÑA…­…•5…¹…•È ¤ì(€€€€€€€¥¹Ð™±…Ì€ô	Õ¥±¹YIM%=8¹M-}%9P€øô€Èà€üA…­…•5…¹…•È¹Q}M%9%9}IQ%%QL€èA…­…•5…¹…•È¹Q}M%9QUILì(€€€€€€€ÑÉäì(€€€€€€€€€€€A…­…•%¹™¼„€ôÁ´¹•ÑA…­…•É¡¥Ù•%¹™¼¡…Á¬¹•ÑA…Ñ  ¤°™±…Ì¤ì(€€€€€€€€€€€A…­…•%¹™¼µ”€ôÁ´¹•ÑA…­…•%¹™¼¡Œ¹•ÑA…­…•9…µ” ¤°™±…Ì¤ì(€€€€€€€€€€€¥˜€¡„€ôô¹Õ±°ñð€…Œ¹•ÑA…­…•9…µ” ¤¹•ÅÕ…±Ì¡„¹Á…­…•9…µ”¤¤É•ÑÕÉ¸™…±Í”ì(€€€€€€€€€€€¥˜€¡	Õ¥±¹YIM%=8¹M-}%9P€øô€Èà€ü„¹•Ñ1½¹Y•ÉÍ¥½¹½‘” ¤€ðôµ”¹•Ñ1½¹Y•ÉÍ¥½¹½‘” ¤€è„¹Ù•ÉÍ¥½¹½‘”€ðôµ”¹Ù•ÉÍ¥½¹½‘”¤É•ÑÕÉ¸™…±Í”ì(€€€€€€€€€€€É•ÑÕÉ¸ÉÉ…åÌ¹•ÅÕ…±Ì¡Í¥¹•ÉÌ¡„¤°Í¥¹•ÉÌ¡µ”¤¤ì(€€€€€€€ô…Ñ €¡á•ÁÑ¥½¸”¤ì(€€€€€€€€€€€É•ÑÕÉ¸™…±Í”ì(€€€€€€€ô(€€€ô((€€€MÕÁÁÉ•ÍÍ]…É¹¥¹Ì ‰‘•ÁÉ•…Ñ¥½¸ˆ¤(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒM¥¹…ÑÕÉ•mtÍ¥¹•ÉÌ¡A…­…•%¹™¼À¤ì(€€€€€€€¥˜€¡	Õ¥±¹YIM%=8¹M-}%9P€øô€Èà¤(€€€€€€€€€€€É•ÑÕÉ¸À¹Í¥¹¥¹%¹™¼€ôô¹Õ±°€ü¹Õ±°€èÀ¹Í¥¹¥¹%¹™¼¹¡…Í5Õ±Ñ¥Á±•M¥¹•ÉÌ ¤(€€€€€€€€€€€€€€€€€€€€üÀ¹Í¥¹¥¹%¹™¼¹•ÑÁ­½¹Ñ•¹ÑÍM¥¹•ÉÌ ¤€èÀ¹Í¥¹¥¹%¹™¼¹•ÑM¥¹¥¹•ÉÑ¥™¥…Ñ•!¥ÍÑ½Éä ¤ì(€€€€€€€É•ÑÕÉ¸À¹Í¥¹…ÑÕÉ•Ìì(€€€ô((€€€€¼¼]¥Ñ¡½ÕÐÑ¡”¡•±Á•Èè¹‘É½¥Ì¥¹ÍÑ…±±•È°Ý¡¥ …Í­Ì½¹”Ñ¼½¹™¥É´€¡…¹°Ñ¡”™¥ÉÍÐÑ¥µ”°(€€€€¼¼Ñ¼…±±½ÜI¥ÑááM¡ Ñ¼¥¹ÍÑ…±°…ÁÁÌ¤¸(€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒI•ÍÕ±Ð¥¹ÍÑ…±±]¥Ñ¡AÉ½µÁÐ¡½¹Ñ•áÐŒ°¥±”…Á¬¤ì(€€€€€€€¥˜€ …Œ¹•ÑA…­…•5…¹…•È ¤¹…¹I•ÅÕ•ÍÑA…­…•%¹ÍÑ…±±Ì ¤¤É•ÑÕÉ¸I•ÍÕ±Ð¹9M}AI5%MM%=8ì(€€€€€€€ÑÉäì(€€€€€€€€€€€A…­…•%¹ÍÑ…±±•ÈÁ¤€ôŒ¹•ÑA…­…•5…¹…•È ¤¹•ÑA…­…•%¹ÍÑ…±±•È ¤ì(€€€€€€€€€€€A…­…•%¹ÍÑ…±±•È¹M•ÍÍ¥½¹A…É…µÌÍÀ€ô¹•ÜA…­…•%¹ÍÑ…±±•È¹M•ÍÍ¥½¹A…É…µÌ¡A…­…•%¹ÍÑ…±±•È¹M•ÍÍ¥½¹A…É…µÌ¹5=}U11}%9MQ10¤ì(€€€€€€€€€€€ÍÀ¹Í•ÑÁÁA…­…•9…µ”¡Œ¹•ÑA…­…•9…µ” ¤¤ì(€€€€€€€€€€€¥¹Ð¥€ôÁ¤¹É•…Ñ•M•ÍÍ¥½¸¡ÍÀ¤ì(€€€€€€€€€€€ÑÉä€¡A…­…•%¹ÍÑ…±±•È¹M•ÍÍ¥½¸Ì€ôÁ¤¹½Á•¹M•ÍÍ¥½¸¡¥¤ì(€€€€€€€€€€€€€€€€%¹ÁÕÑMÑÉ•…´¥¸€ô¹•Ü¥±•%¹ÁÕÑMÑÉ•…´¡…Á¬¤ì=ÕÑÁÕÑMÑÉ•…´½ÕÐ€ôÌ¹½Á•¹]É¥Ñ” ‰É¥ÑááÍ¡ ¹…Á¬ˆ°€À°…Á¬¹±•¹Ñ  ¤¤¤ì(€€€€€€€€€€€€€€€‰åÑ•mtˆ€ô¹•Ü‰åÑ•lØÔÔÌÙtì(€€€€€€€€€€€€€€€™½È€¡¥¹Ð¸ì€¡¸€ô¥¸¹É•…¡ˆ¤¤€ø€Àì€¤½ÕÐ¹ÝÉ¥Ñ”¡ˆ°€À°¸¤ì(€€€€€€€€€€€€€€€Ì¹™Íå¹Œ¡½ÕÐ¤ì(€€€€€€€€€€€€€€€½ÕÐ¹±½Í” ¤ì(€€€€€€€€€€€€€€€%¹Ñ•¹ÐÍÑ…ÑÕÌ€ô¹•Ü%¹Ñ•¹Ð¡Œ°%¹ÍÑ…±±MÑ…ÑÕÌ¹±…ÍÌ¤ì(€€€€€€€€€€€€€€€Ì¹½µµ¥Ð¡A•¹‘¥¹%¹Ñ•¹Ð¹•Ñ	É½…‘…ÍÐ¡Œ°€ÄÌ°ÍÑ…ÑÕÌ°A•¹‘¥¹%¹Ñ•¹Ð¹1}5UQ	1ðA•¹‘¥¹%¹Ñ•¹Ð¹1}UAQ}UII9P¤¹•Ñ%¹Ñ•¹ÑM•¹‘•È ¤¤ì(€€€€€€€€€€€ô(€€€€€€€€€€€É•ÑÕÉ¸I•ÍÕ±Ð¹AI=5AQì(€€€€€€€ô…Ñ €¡á•ÁÑ¥½¸”¤ì(€€€€€€€€€€€É•ÑÕÉ¸I•ÍÕ±Ð¹%1ì(€€€€€€€ô(€€€ô((€€€€¼¼¹‘É½¥Ì¥¹ÍÑ…±±•ÈÉ•Á½ÉÑÌ¡•É”ìÝ¡•¸¥Ð¹••‘ÌÑ¡”ÕÍ•ÈÌ½¹™¥Éµ…Ñ¥½¸°¥ÑÌÍÉ••¸¥ÌÍ¡½Ý¸¸(€€€ÁÕ‰±¥ŒÍÑ…Ñ¥Œ±…ÍÌ%¹ÍÑ…±±MÑ…ÑÕÌ•áÑ•¹‘Ì	É½…‘…ÍÑI••¥Ù•Èì(€€€€€€€=Ù•ÉÉ¥‘”ÁÕ‰±¥ŒÙ½¥½¹I••¥Ù”¡½¹Ñ•áÐŒ°%¹Ñ•¹Ð¤¤ì(€€€€€€€€€€€¥¹ÐÍÑ…ÑÕÌ€ô¤¹•Ñ%¹ÑáÑÉ„¡A…­…•%¹ÍÑ…±±•È¹aQI}MQQUL°A…­…•%¹ÍÑ…±±•È¹MQQUM}%1UI¤ì(€€€€€€€€€€€¥˜€¡ÍÑ…ÑÕÌ€ôôA…­…•%¹ÍÑ…±±•È¹MQQUM}A9%9}UMI}Q%=8¤ì(€€€€€€€€€€€€€€€%¹Ñ•¹Ð½¹™¥É´€ô¤¹•ÑA…É•±…‰±•áÑÉ„¡%¹Ñ•¹Ð¹aQI}%9Q9P¤ì(€€€€€€€€€€€€€€€¥˜€¡½¹™¥É´€„ô¹Õ±°¤Œ¹ÍÑ…ÉÑÑ¥Ù¥Ñä¡½¹™¥É´¹…‘‘±…Ì¡%¹Ñ•¹Ð¹1}Q%Y%Qe}9]}QM,¤¤ì(€€€€€€€€€€€ô•±Í”¥˜€¡ÍÑ…ÑÕÌ€„ôA…­…•%¹ÍÑ…±±•È¹MQQUM}MUML¤ì(€€€€€€€€€€€€€€€Ù•¹ÑÌ¹…‘¡Œ°Ù•¹ÑÌ¹%0°€‰UÁ‘…Ñ”¹½Ð¥¹ÍÑ…±±•è€ˆ€¬¤¹•ÑMÑÉ¥¹áÑÉ„¡A…­…•%¹ÍÑ…±±•È¹aQI}MQQUM}5MM¤¤ì(€€€€€€€€€€€ô(€€€€€€€ô(€€€ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥Œ‰åÑ•mtÉ•…‘±°¡%¹ÁÕÑMÑÉ•…´¥¸¤Ñ¡É½ÝÌ©…Ù„¹¥¼¹%=á•ÁÑ¥½¸ì(€€€€€€€©…Ù„¹¥¼¹	åÑ•ÉÉ…å=ÕÑÁÕÑMÑÉ•…´¼€ô¹•Ü©…Ù„¹¥¼¹	åÑ•ÉÉ…å=ÕÑÁÕÑMÑÉ•…´ ¤ì(€€€€€€€‰åÑ•mtˆ€ô¹•Ü‰åÑ•lÄØÌàÑtì(€€€€€€€™½È€¡¥¹Ð¸ì€¡¸€ô¥¸¹É•…¡ˆ¤¤€ø€Àì€¤¼¹ÝÉ¥Ñ”¡ˆ°€À°¸¤ì(€€€€€€€É•ÑÕÉ¸¼¹Ñ½	åÑ•ÉÉ…ä ¤ì(€€€ô((€€€ÁÉ¥Ù…Ñ”ÍÑ…Ñ¥ŒMÑÉ¥¹œ¡•à¡‰åÑ•mt¤ì(€€€€€€€MÑÉ¥¹	Õ¥±‘•ÈÌ€ô¹•ÜMÑÉ¥¹	Õ¥±‘•È ¤ì(€€€€€€€™½È€¡‰åÑ”à€è¤Ì¹…ÁÁ•¹¡MÑÉ¥¹œ¹™½Éµ…Ð ˆ”ÀÉàˆ°à¤¤ì(€€€€€€€É•ÑÕÉ¸Ì¹Ñ½MÑÉ¥¹œ ¤ì(€€€ô)ô

@@ -3,9 +3,9 @@ import java.util.Properties
 plugins { id("com.android.application") }
 
 // Release signing is read from a properties file kept OUTSIDE the repository
-// (default ~/.gradle/hush-signing.properties, or the path in HUSH_SIGNING).
+// (default ~/.gradle/ritxxshh-signing.properties, or the path in RITXXSHH_SIGNING).
 // Keys: storeFile, storePassword, keyAlias, keyPassword. Without it, release builds are unsigned.
-val signingFile = file(System.getenv("HUSH_SIGNING") ?: "${System.getProperty("user.home")}/.gradle/hush-signing.properties")
+val signingFile = file(System.getenv("RITXXSHH_SIGNING") ?: "${System.getProperty("user.home")}/.gradle/ritxxshh-signing.properties")
 val signing = Properties().apply { if (signingFile.exists()) signingFile.inputStream().use { load(it) } }
 
 android {
@@ -13,11 +13,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "io.coldmew.hush"
+        applicationId = "com.ritxx.ritxxshh"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "2.0.7"
+        versionCode = 17
+        versionName = "1.1"
     }
 
     signingConfigs {
